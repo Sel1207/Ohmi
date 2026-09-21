@@ -12,6 +12,7 @@ import { errorMessage } from '../utils/errors';
 import { useAuth } from '../hooks/useAuth';
 
 const JOBS_PER_PAGE = 6;
+const DESIGNERS_PER_PAGE = 8;
 
 export function Marketplace() {
   const { user } = useAuth();
@@ -23,6 +24,7 @@ export function Marketplace() {
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [designerPage, setDesignerPage] = useState(1);
   const [designers, setDesigners] = useState<DesignerProfileView[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [members, setMembers] = useState<Record<string, { name: string; avatarUrl?: string }>>({});
@@ -57,6 +59,7 @@ export function Marketplace() {
         setJobs(user ? jobData.filter((job) => job.clientId !== user.id) : jobData);
         setMembers(Object.fromEntries(userData.map((member) => [member.id, member])));
         setCurrentPage(1);
+        setDesignerPage(1);
       } catch (err) {
         if (alive) setError(errorMessage(err));
       } finally {
@@ -91,6 +94,8 @@ export function Marketplace() {
 
   const totalPages = Math.max(1, Math.ceil(filteredJobs.length / JOBS_PER_PAGE));
   const visibleJobs = filteredJobs.slice((currentPage - 1) * JOBS_PER_PAGE, currentPage * JOBS_PER_PAGE);
+  const designerTotalPages = Math.max(1, Math.ceil(designers.length / DESIGNERS_PER_PAGE));
+  const visibleDesigners = designers.slice((designerPage - 1) * DESIGNERS_PER_PAGE, designerPage * DESIGNERS_PER_PAGE);
 
   return (
     <main className="page marketplace-shell">
@@ -181,7 +186,7 @@ export function Marketplace() {
               <div className="card empty-state">No designers match these filters.</div>
             ) : (
               <div className="card-grid">
-                {designers.map((profile) => {
+                {visibleDesigners.map((profile) => {
                   const image = profile.portfolio[0]?.imageUrls[0];
                   return (
                     <Link className="profile-card" to={`/designers/${profile.userId}`} key={profile.userId}>
@@ -209,6 +214,21 @@ export function Marketplace() {
                 })}
               </div>
             )}
+            {designerTotalPages > 1 ? (
+              <nav className="pagination" aria-label="Designer profile pages">
+                {Array.from({ length: designerTotalPages }, (_, index) => index + 1).map((pageNumber) => (
+                  <button
+                    className={pageNumber === designerPage ? 'active' : ''}
+                    type="button"
+                    key={pageNumber}
+                    onClick={() => setDesignerPage(pageNumber)}
+                    aria-current={pageNumber === designerPage ? 'page' : undefined}
+                  >
+                    {pageNumber}
+                  </button>
+                ))}
+              </nav>
+            ) : null}
           </section>
 
           <section className="stack">
