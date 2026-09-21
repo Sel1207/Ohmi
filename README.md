@@ -1,5 +1,9 @@
 # React + TypeScript + Vite
 
+## Deployment URL
+
+For stable project invite links on Vercel, set the environment variable `VITE_PUBLIC_APP_URL` to the deployed app URL, for example `https://your-project.vercel.app`. If it is not set, the app uses the current deployed browser origin automatically.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

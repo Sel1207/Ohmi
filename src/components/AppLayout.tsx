@@ -52,9 +52,8 @@ export function AppLayout() {
             Home
           </NavLink>
           <NavLink to="/marketplace">Marketplace</NavLink>
-          <NavLink to="/how-it-works">How it works</NavLink>
           <NavLink to="/about">About</NavLink>
-          {user?.role === 'client' ? <NavLink to="/jobs/new">Post a job</NavLink> : null}
+          {user && (user.role === 'client' || ((user.role === 'designer' || user.role === 'pee_reviewer') && user.verification === 'verified')) ? <NavLink to="/jobs/new">Post a job</NavLink> : null}
           {user ? <NavLink to="/dashboard">Dashboard</NavLink> : null}
         </nav>
 

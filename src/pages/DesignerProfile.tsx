@@ -78,6 +78,12 @@ export function DesignerProfile() {
     );
   }
 
+  const ratingCounts = [5, 4, 3, 2, 1].map((stars) => ({
+    stars,
+    count: reviews.filter((review) => review.stars === stars).length,
+  }));
+  const highestRatingCount = Math.max(1, ...ratingCounts.map((item) => item.count));
+
   return (
     <main className="page">
       <section className="page-heading">
@@ -142,25 +148,34 @@ export function DesignerProfile() {
         <section className="card stack">
           <div className="section-title">
             <h2>Ratings</h2>
-            <strong>
-              {profile.reviewCount > 0
-                ? `${profile.averageRating.toFixed(1)} / 5 from ${profile.reviewCount}`
-                : 'No reviews yet'}
-            </strong>
+            <span className="count-pill">{profile.reviewCount} reviews</span>
           </div>
-          {reviews.length === 0 ? (
-            <div className="empty-state">This designer has not been rated yet.</div>
-          ) : (
-            reviews.map((review) => (
-              <div className="list-card" key={review.id}>
-                <strong>
-                  {review.stars} {review.stars === 1 ? 'star' : 'stars'}
-                </strong>
-                <span>{review.comment}</span>
-                <small>{formatDate(review.createdAt)}</small>
-              </div>
-            ))
-          )}
+          <div className="rating-overview">
+            <div className="rating-score">
+              <strong>{profile.reviewCount > 0 ? profile.averageRating.toFixed(1) : '—'}</strong>
+              <span className="rating-stars" aria-label={`${profile.averageRating.toFixed(1)} out of 5 stars`}>★★★★★</span>
+              <small>{profile.reviewCount > 0 ? 'Average rating' : 'No ratings yet'}</small>
+            </div>
+            <div className="rating-breakdown">
+              {ratingCounts.map((item) => (
+                <div className="rating-row" key={item.stars}>
+                  <span>{item.stars}</span>
+                  <div className="rating-bar"><span style={{ width: `${(item.count / highestRatingCount) * 100}%` }} /></div>
+                  <small>{item.count}</small>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="review-list">
+            {reviews.length === 0 ? (
+              <div className="empty-state">Complete a project with this designer to leave the first review.</div>
+            ) : reviews.map((review) => (
+              <article className="review-card" key={review.id}>
+                <div className="split-row"><strong className="rating-stars small">{'★'.repeat(review.stars)}</strong><small>{formatDate(review.createdAt)}</small></div>
+                <p>{review.comment}</p>
+              </article>
+            ))}
+          </div>
         </section>
       </div>
 

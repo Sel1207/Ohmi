@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { BUILDING_TYPE_LABELS, projectTypeLabel } from '../constants/marketplace';
 import { TIER_ORDER } from '../constants/tiers';
@@ -10,6 +11,8 @@ import { formatDate, formatPeso } from '../utils/format';
 import { errorMessage } from '../utils/errors';
 import { useAuth } from '../hooks/useAuth';
 
+const JOBS_PER_PAGE = 6;
+
 export function Marketplace() {
   const { user } = useAuth();
   const [location, setLocation] = useState('');
@@ -17,6 +20,9 @@ export function Marketplace() {
   const [buildingType, setBuildingType] = useState<BuildingType | 'all'>('all');
   const [minBudget, setMinBudget] = useState('');
   const [maxBudget, setMaxBudget] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [designers, setDesigners] = useState<DesignerProfileView[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [members, setMembers] = useState<Record<string, { name: string; avatarUrl?: string }>>({});
@@ -33,6 +39,7 @@ export function Marketplace() {
     }),
     [location, tier, buildingType, minBudget, maxBudget],
   );
+  const canPostJobs = Boolean(user && (user.role === 'client' || ((user.role === 'designer' || user.role === 'pee_reviewer') && user.verification === 'verified')));
 
   useEffect(() => {
     let alive = true;
@@ -47,8 +54,9 @@ export function Marketplace() {
         ]);
         if (!alive) return;
         setDesigners(profileData);
-        setJobs(jobData);
+        setJobs(user ? jobData.filter((job) => job.clientId !== user.id) : jobData);
         setMembers(Object.fromEntries(userData.map((member) => [member.id, member])));
+        setCurrentPage(1);
       } catch (err) {
         if (alive) setError(errorMessage(err));
       } finally {
@@ -59,7 +67,30 @@ export function Marketplace() {
     return () => {
       alive = false;
     };
-  }, [filters]);
+  }, [filters, user]);
+
+  const handleSearch = (event: FormEvent) => {
+    event.preventDefault();
+    setSearchTerm(searchInput.trim().toLowerCase());
+    setCurrentPage(1);
+  };
+
+  const filteredJobs = useMemo(() => {
+    if (!searchTerm) return jobs;
+    return jobs.filter((job) => {
+      const searchableText = [
+        job.title,
+        job.scope,
+        job.location,
+        projectTypeLabel(job.projectType, job.projectTypeOther),
+        BUILDING_TYPE_LABELS[job.buildingType],
+      ].join(' ').toLowerCase();
+      return searchableText.includes(searchTerm);
+    });
+  }, [jobs, searchTerm]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredJobs.length / JOBS_PER_PAGE));
+  const visibleJobs = filteredJobs.slice((currentPage - 1) * JOBS_PER_PAGE, currentPage * JOBS_PER_PAGE);
 
   return (
     <main className="page marketplace-shell">
@@ -73,22 +104,33 @@ export function Marketplace() {
           </p>
         </div>
         <div className="marketplace-cta">
-          {user?.role === 'client' ? (
+          {!user ? (
+            <Link className="btn btn-primary" to="/login">
+              Sign in to hire
+            </Link>
+          ) : canPostJobs ? (
             <Link className="btn btn-primary" to="/jobs/new">
               Post a project
             </Link>
           ) : (
-            <Link className="btn btn-primary" to="/login">
-              Sign in to hire
+            <Link className="btn btn-primary" to="/marketplace">
+              Browse open jobs
             </Link>
           )}
-          <Link className="btn btn-secondary" to="/jobs/new">
-            Review proposal flow
+          <Link className="btn btn-secondary" to="/about">
+            How it works
           </Link>
         </div>
       </section>
 
       <section className="card filter-bar" aria-label="Marketplace filters">
+        <form className="job-search" onSubmit={handleSearch}>
+          <label className="field">
+            Search jobs
+            <input value={searchInput} onChange={(event) => setSearchInput(event.target.value)} placeholder="Lighting layout, CAD, power plan..." />
+          </label>
+          <button className="btn btn-primary" type="submit">Search</button>
+        </form>
         <label className="field">
           Location
           <input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="City or province" />
@@ -172,12 +214,12 @@ export function Marketplace() {
           <section className="stack">
             <div className="section-title">
               <h2>Job feed</h2>
-              <span className="count-pill">{jobs.length}</span>
+              <span className="count-pill">{filteredJobs.length}</span>
             </div>
-            {jobs.length === 0 ? (
-              <div className="card empty-state">No open jobs match these filters.</div>
+            {filteredJobs.length === 0 ? (
+              <div className="card empty-state">No open jobs match your search and filters.</div>
             ) : (
-              jobs.map((job) => (
+              visibleJobs.map((job) => (
                 <article className="card job-card" key={job.id}>
                   <Link className="job-card-link" to={`/jobs/${job.id}`}>
                   <div className="split-row">
@@ -204,6 +246,21 @@ export function Marketplace() {
                 </article>
               ))
             )}
+            {totalPages > 1 ? (
+              <nav className="pagination" aria-label="Job feed pages">
+                {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
+                  <button
+                    className={pageNumber === currentPage ? 'active' : ''}
+                    type="button"
+                    key={pageNumber}
+                    onClick={() => setCurrentPage(pageNumber)}
+                    aria-current={pageNumber === currentPage ? 'page' : undefined}
+                  >
+                    {pageNumber}
+                  </button>
+                ))}
+              </nav>
+            ) : null}
           </section>
         </div>
       ) : null}

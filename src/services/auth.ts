@@ -12,6 +12,8 @@ export interface SignupInput {
   role: SignupRole;
   tier?: TierId;
   prcNumber?: string;
+  educationLevel?: string;
+  educationInstitution?: string;
   location?: string;
 }
 
@@ -60,7 +62,7 @@ function seedUsers(): StoredUser[] {
   // PRC numbers below are FAKE demo values.
   return [
     make({ id: 'u_admin', name: 'Ohmi Admin', email: 'admin@ohmi.ph', role: 'admin', verification: 'verified', specialties: [] }),
-    make({ id: 'u_maria', name: 'Maria Santos', email: 'maria@demo.ph', role: 'client', verification: 'verified', location: 'Quezon City', specialties: [] }),
+    make({ id: 'u_maria', name: 'Maria Santos', email: 'maria@demo.ph', role: 'designer', tier: 'ree', prcNumber: '0098765', verification: 'verified', educationLevel: "Bachelor's degree", educationInstitution: 'University of the Philippines Diliman', location: 'Quezon City', specialties: ['Load calculation', 'Residential design'] }),
     make({ id: 'u_juan', name: 'Juan dela Cruz', email: 'juan@demo.ph', role: 'client', verification: 'verified', location: 'Cebu City', specialties: [] }),
     make({ id: 'u_paolo', name: 'Paolo Reyes', email: 'paolo@demo.ph', role: 'designer', tier: 'student', avatarUrl: demoAvatarByUserId.u_paolo, verification: 'verified', location: 'Manila', specialties: ['Residential wiring'] }),
     make({ id: 'u_ana', name: 'Engr. Ana Villanueva', email: 'ana@demo.ph', role: 'designer', tier: 'ree', avatarUrl: demoAvatarByUserId.u_ana, prcNumber: '0012345', verification: 'verified', location: 'Makati', specialties: ['Commercial', 'Load calculation'] }),
@@ -76,11 +78,23 @@ function seedUsers(): StoredUser[] {
 function readUsers(): StoredUser[] {
   const existing = load<StoredUser[] | null>(USERS_KEY, null);
   if (existing) {
-    const repaired = existing.map((user) =>
-      demoAvatarByUserId[user.id] && (!user.avatarUrl || user.avatarUrl.includes('images.unsplash.com') || user.avatarUrl.includes('/profile-'))
-        ? { ...user, avatarUrl: demoAvatarByUserId[user.id] }
-        : user,
-    );
+    const repaired = existing.map((user) => {
+      const mariaDemo = user.id === 'u_maria'
+        ? {
+            ...user,
+            role: 'designer' as const,
+            tier: 'ree' as const,
+            prcNumber: user.prcNumber ?? '0098765',
+            verification: 'verified' as const,
+            educationLevel: user.educationLevel ?? "Bachelor's degree",
+            educationInstitution: user.educationInstitution ?? 'University of the Philippines Diliman',
+            specialties: user.specialties.length > 0 ? user.specialties : ['Load calculation', 'Residential design'],
+          }
+        : user;
+      return demoAvatarByUserId[mariaDemo.id] && (!mariaDemo.avatarUrl || mariaDemo.avatarUrl.includes('images.unsplash.com') || mariaDemo.avatarUrl.includes('/profile-'))
+        ? { ...mariaDemo, avatarUrl: demoAvatarByUserId[mariaDemo.id] }
+        : mariaDemo;
+    });
     const knownIds = new Set(repaired.map((user) => user.id));
     const missingDemoUsers = seedUsers().filter((user) => !knownIds.has(user.id));
     const complete = [...repaired, ...missingDemoUsers];
@@ -113,6 +127,8 @@ export const localAuthService: AuthService = {
     if (!input.name.trim()) throw new Error('Name is required.');
     if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error('Enter a valid email.');
     if (input.password.length < 6) throw new Error('Password must be at least 6 characters.');
+    if (!input.educationLevel?.trim()) throw new Error('Choose your educational level.');
+    if (!input.educationInstitution?.trim()) throw new Error('Enter your school or institution.');
     if (users.some((u) => u.email === email)) throw new Error('That email is already registered.');
 
     // PEE reviewers are always PEE tier; only designers pick their own tier.
@@ -126,9 +142,8 @@ export const localAuthService: AuthService = {
       throw new Error('Enter a valid PRC license number (digits only).');
     }
 
-    // Licensed tiers start as "pending" until an admin checks the license by hand.
-    // Students and clients have nothing to verify.
-    const verification: VerificationStatus = needsLicense ? 'pending' : 'verified';
+    // Every new account remains pending until an admin verifies it.
+    const verification: VerificationStatus = 'pending';
 
     const user: StoredUser = {
       id: uid('u'),
@@ -139,6 +154,8 @@ export const localAuthService: AuthService = {
       tier,
       prcNumber: needsLicense ? prc : undefined,
       verification,
+      educationLevel: input.educationLevel.trim(),
+      educationInstitution: input.educationInstitution.trim(),
       location: input.location?.trim() || undefined,
       specialties: [],
       createdAt: new Date().toISOString(),

@@ -33,17 +33,15 @@ export function Profile() {
   }, [user]);
 
   if (!user) return null;
-  const isDesigner = Boolean(profile);
-
   return (
     <main className="page">
       <section className="page-heading">
         <div className="profile-heading">
           <Avatar name={user.name} src={user.avatarUrl} size="lg" />
           <div>
-            <p className="eyebrow">{isDesigner ? profile.location : ROLE_LABELS[user.role]}</p>
+            <p className="eyebrow">{profile?.location ?? ROLE_LABELS[user.role]}</p>
             <h1>{user.name}</h1>
-            <p className="muted">{isDesigner ? profile.headline : user.email}</p>
+            <p className="muted">{profile?.headline ?? user.email}</p>
           </div>
         </div>
         <div className="profile-heading-badges">
@@ -55,18 +53,18 @@ export function Profile() {
 
       <div className="grid two uneven">
         <section className="card stack">
-          <h2>{isDesigner ? 'Professional profile' : 'Member profile'}</h2>
-          <p>{isDesigner ? profile.bio : 'Client account for organizing electrical work, comparing proposals, and managing project delivery on Ohmi.'}</p>
+          <h2>{profile ? 'Professional profile' : 'Member profile'}</h2>
+          <p>{profile?.bio ?? 'Client account for organizing electrical work, comparing proposals, and managing project delivery on Ohmi.'}</p>
           <div className="meta-row">
             <span>{user.location ?? 'Location not provided'}</span>
-            <span>{isDesigner ? `${profile.projectsUndertaken} projects undertaken` : `${postedJobs.length} jobs posted`}</span>
+            <span>{profile ? `${profile.projectsUndertaken} projects undertaken` : `${postedJobs.length} jobs posted`}</span>
             <span>{projects.length} active projects</span>
-            {isDesigner ? <span>{profile.proposalsSent} proposals sent</span> : null}
+            {profile ? <span>{profile.proposalsSent} proposals sent</span> : null}
           </div>
           <dl className="profile-facts">
             <div><dt>Address</dt><dd>{profile?.address ?? user.location ?? 'Address not provided'}</dd></div>
-            <div><dt>Education</dt><dd>{profile?.education ?? user.education ?? 'Education details not provided'}</dd></div>
-            {isDesigner ? <div><dt>Service area</dt><dd>{profile.location}</dd></div> : null}
+            <div><dt>Education</dt><dd>{profile?.education ?? ([user.educationLevel, user.educationInstitution].filter(Boolean).join(' - ') || 'Education details not provided')}</dd></div>
+            {profile ? <div><dt>Service area</dt><dd>{profile.location}</dd></div> : null}
           </dl>
           <div className="tag-row">
             {user.specialties.length > 0 ? user.specialties.map((item) => <span className="tag" key={item}>{item}</span>) : <span className="muted">No specialties added</span>}
@@ -75,10 +73,10 @@ export function Profile() {
 
         <section className="card stack">
           <div className="section-title">
-            <h2>{isDesigner ? 'Ratings' : 'Account activity'}</h2>
-            <strong>{isDesigner && profile.reviewCount > 0 ? `${profile.averageRating.toFixed(1)} / 5` : `${projects.length} active`}</strong>
+            <h2>{profile ? 'Ratings' : 'Account activity'}</h2>
+            <strong>{profile && profile.reviewCount > 0 ? `${profile.averageRating.toFixed(1)} / 5` : `${projects.length} active`}</strong>
           </div>
-          {isDesigner ? (
+          {profile ? (
             reviews.length === 0 ? <div className="empty-state">No reviews yet.</div> : reviews.map((review) => (
               <div className="list-card" key={review.id}><strong>{review.stars} {review.stars === 1 ? 'star' : 'stars'}</strong><span>{review.comment}</span><small>{formatDate(review.createdAt)}</small></div>
             ))
@@ -89,8 +87,8 @@ export function Profile() {
       </div>
 
       <section className="stack">
-        <div className="section-title"><h2>{isDesigner ? 'Projects undertaken' : 'Posted projects'}</h2><span className="count-pill">{isDesigner ? profile.portfolio.length : postedJobs.length}</span></div>
-        {isDesigner ? (
+        <div className="section-title"><h2>{profile ? 'Projects undertaken' : 'Posted projects'}</h2><span className="count-pill">{profile ? profile.portfolio.length : postedJobs.length}</span></div>
+        {profile ? (
           profile.portfolio.length === 0 ? <div className="card empty-state">No projects added yet.</div> : <div className="card-grid">{profile.portfolio.map((item) => <article className="portfolio-card" key={item.id}>{item.imageUrls[0] ? <img src={item.imageUrls[0]} alt={item.title} /> : null}<div className="stack compact"><strong>{item.title}</strong><span>{projectTypeLabel(item.projectType)}</span><p>{item.description}</p></div></article>)}</div>
         ) : (
           postedJobs.length === 0 ? <div className="card empty-state">No projects posted yet.</div> : postedJobs.map((job) => <Link className="card list-card" to={`/jobs/${job.id}`} key={job.id}><div className="split-row"><strong>{job.title}</strong><span className={`status-pill ${job.status}`}>{job.status}</span></div><span>{projectTypeLabel(job.projectType, job.projectTypeOther)} - {BUILDING_TYPE_LABELS[job.buildingType]}</span><small>{formatPeso(job.budgetMin)} to {formatPeso(job.budgetMax)} - Posted {formatDate(job.createdAt)}</small></Link>)

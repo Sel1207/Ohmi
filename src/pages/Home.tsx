@@ -25,10 +25,11 @@ function YesNo({ yes }: { yes: boolean }) {
 
 export function Home() {
   const { user } = useAuth();
+  const canPostJobs = !user || user.role === 'client' || ((user.role === 'designer' || user.role === 'pee_reviewer') && user.verification === 'verified');
 
   // Clients (and visitors) come to post work. Designers and admins come to find it.
   const audience =
-    !user || user.role === 'client'
+    canPostJobs
       ? {
           primary: { to: '/jobs/new', label: 'Post a job' },
           secondary: { to: '/marketplace', label: 'Browse designers' },

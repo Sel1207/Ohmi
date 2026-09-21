@@ -2,9 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { BUILDING_TYPE_LABELS, INTAKE_HELP, POWER_TYPE_LABELS, PROJECT_STATUS_LABELS, projectTypeLabel } from '../constants/marketplace';
+import { Avatar } from '../components/Avatar';
 import { TierBadge } from '../components/TierBadge';
-import { marketplaceService } from '../services';
-import type { DesignerProfileView, Job, JobIntake, Proposal } from '../types';
+import { authService, marketplaceService } from '../services';
+import type { DesignerProfileView, Job, JobIntake, Proposal, User } from '../types';
 import { formatDate, formatPeso } from '../utils/format';
 import { errorMessage } from '../utils/errors';
 import { useAuth } from '../hooks/useAuth';
@@ -19,6 +20,7 @@ export function JobDetail() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [job, setJob] = useState<Job | null>(null);
+  const [poster, setPoster] = useState<User | null>(null);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [profiles, setProfiles] = useState<DesignerProfileView[]>([]);
   const [price, setPrice] = useState('');
@@ -35,11 +37,13 @@ export function JobDetail() {
     setError(null);
     try {
       const jobData = await marketplaceService.getJob(id);
-      const [proposalData, profileData] = await Promise.all([
+      const [proposalData, profileData, users] = await Promise.all([
         user?.id === jobData.clientId ? marketplaceService.listProposalsForJob(id, user.id) : Promise.resolve([]),
         marketplaceService.listDesignerProfiles(),
+        authService.listUsers(),
       ]);
       setJob(jobData);
+      setPoster(users.find((member) => member.id === jobData.clientId) ?? null);
       setProposals(proposalData);
       setProfiles(profileData);
     } catch (err) {
@@ -55,7 +59,7 @@ export function JobDetail() {
 
   const profileById = useMemo(() => new Map(profiles.map((profile) => [profile.userId, profile])), [profiles]);
 
-  const canPropose = user?.role === 'designer' || user?.role === 'pee_reviewer';
+  const isProposalRole = user?.role === 'designer' || user?.role === 'pee_reviewer';
   const isOwner = Boolean(user && job && user.id === job.clientId);
 
   const handleProposal = async (event: FormEvent) => {
@@ -119,6 +123,23 @@ export function JobDetail() {
         <span className={`status-pill ${job.status}`}>{job.status}</span>
       </section>
 
+      {poster ? (
+        <div className="card job-poster job-poster-detail">
+          <Link className="job-poster-profile" to={`/profiles/${poster.id}`}>
+            <Avatar name={poster.name} src={poster.avatarUrl} size="sm" />
+            <span>
+              <strong>{poster.name}</strong>
+              <small>
+                Posted by {poster.role === 'client' ? 'client' : poster.tier ? `${poster.tier.toUpperCase()} practitioner` : 'Ohmi member'} - View profile
+              </small>
+            </span>
+          </Link>
+          <Link className="btn btn-secondary" to={`/messages/new?to=${poster.id}`}>
+            Message poster
+          </Link>
+        </div>
+      ) : null}
+
       {formError ? <div className="alert error">{formError}</div> : null}
 
       <div className="grid two uneven">
@@ -157,12 +178,17 @@ export function JobDetail() {
                 Sign in
               </Link>
             </div>
-          ) : !canPropose ? (
+          ) : !isProposalRole ? (
             <p className="muted">Proposal submissions are available to designer and PEE reviewer accounts. Client accounts can post jobs and review incoming proposals.</p>
           ) : job.status !== 'open' ? (
             <p className="muted">This job is already assigned.</p>
           ) : (
             <form className="stack" onSubmit={handleProposal}>
+              {user.verification !== 'verified' ? (
+                <div className="alert">
+                  Your account is unverified. Please wait for an admin to verify you before taking this job.
+                </div>
+              ) : null}
               <div className="grid two">
                 <label className="field">
                   Price

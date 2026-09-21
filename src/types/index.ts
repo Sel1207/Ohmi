@@ -13,6 +13,8 @@ export interface User {
   tier?: TierId;
   prcNumber?: string;
   verification: VerificationStatus;
+  educationLevel?: string;
+  educationInstitution?: string;
   location?: string;
   specialties: string[];
   createdAt: string;
@@ -111,6 +113,28 @@ export interface Project {
   designerId: string;
   title: string;
   status: ProjectStatus;
+  collaboratorIds?: string[];
+  progressPercent?: number;
+  createdAt: string;
+}
+
+export interface ProjectFile {
+  id: string;
+  projectId: string;
+  name: string;
+  size: number;
+  type: string;
+  dataUrl: string;
+  uploadedBy: string;
+  createdAt: string;
+}
+
+export interface ProgressUpdate {
+  id: string;
+  projectId: string;
+  progressPercent: number;
+  report: string;
+  updatedBy: string;
   createdAt: string;
 }
 
@@ -126,6 +150,7 @@ export interface Review {
 
 export interface Message {
   id: string;
+  projectId?: string;
   senderId: string;
   recipientId: string;
   body: string;

@@ -67,7 +67,7 @@ export default function App() {
             <Route
               path="jobs/new"
               element={
-                <RequireAuth roles={['client']}>
+                <RequireAuth roles={['client', 'designer', 'pee_reviewer']}>
                   <JobIntake />
                 </RequireAuth>
               }

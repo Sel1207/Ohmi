@@ -18,6 +18,8 @@ export function Login() {
   const [role, setRole] = useState<SignupRole>('client');
   const [tier, setTier] = useState<TierId>('ree');
   const [prcNumber, setPrcNumber] = useState('');
+  const [educationLevel, setEducationLevel] = useState('');
+  const [educationInstitution, setEducationInstitution] = useState('');
   const [locationText, setLocationText] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const { login, signup } = useAuth();
@@ -43,6 +45,8 @@ export function Login() {
           role,
           tier: role === 'designer' ? tier : undefined,
           prcNumber,
+          educationLevel,
+          educationInstitution,
           location: locationText,
         };
         await signup(input);
@@ -93,6 +97,28 @@ export function Login() {
                     <option value="designer">Designer</option>
                     <option value="pee_reviewer">PEE Reviewer</option>
                   </select>
+                </label>
+                <label className="field">
+                  Educational level
+                  <select value={educationLevel} onChange={(event) => setEducationLevel(event.target.value)} required>
+                    <option value="">Select your level</option>
+                    <option value="High school">High school</option>
+                    <option value="Vocational or technical">Vocational or technical</option>
+                    <option value="College undergraduate">College undergraduate</option>
+                    <option value="Bachelor's degree">Bachelor's degree</option>
+                    <option value="Master's degree">Master's degree</option>
+                    <option value="Doctorate">Doctorate</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </label>
+                <label className="field">
+                  University or institution
+                  <input
+                    value={educationInstitution}
+                    onChange={(event) => setEducationInstitution(event.target.value)}
+                    placeholder="e.g. University of the Philippines"
+                    required
+                  />
                 </label>
                 <label className="field">
                   Location

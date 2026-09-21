@@ -6,6 +6,8 @@ import type {
   Job,
   MarketplaceFilters,
   Project,
+  ProjectFile,
+  ProgressUpdate,
   Proposal,
   Review,
   Message,
@@ -45,10 +47,18 @@ export interface MarketplaceService {
   getJob(jobId: string): Promise<Job>;
   createJob(clientId: string, input: CreateJobInput): Promise<Job>;
   listProposalsForJob(jobId: string, viewerId: string): Promise<Proposal[]>;
+  listProposalsForDesigner(designerId: string): Promise<Proposal[]>;
   submitProposal(jobId: string, designerId: string, input: CreateProposalInput): Promise<Proposal>;
+  updateProposal(proposalId: string, designerId: string, input: CreateProposalInput): Promise<Proposal>;
   acceptProposal(proposalId: string, clientId: string): Promise<Project>;
   listProjectsForUser(userId: string): Promise<Project[]>;
   getProject(projectId: string): Promise<Project>;
+  updateProjectProgress(projectId: string, userId: string, progressPercent: number, report: string): Promise<Project>;
+  listProgressUpdates(projectId: string, userId: string): Promise<ProgressUpdate[]>;
+  listProjectFiles(projectId: string): Promise<ProjectFile[]>;
+  uploadProjectFile(projectId: string, userId: string, file: Omit<ProjectFile, 'id' | 'projectId' | 'uploadedBy' | 'createdAt'>): Promise<ProjectFile>;
+  getProjectInviteLink(projectId: string): string;
+  joinProjectByInvite(projectId: string, token: string, userId: string): Promise<Project>;
   completeProject(projectId: string, userId: string): Promise<Project>;
   rateDesigner(projectId: string, clientId: string, stars: number, comment: string): Promise<Review>;
   listReviewsForDesigner(designerId: string): Promise<Review[]>;
@@ -57,6 +67,8 @@ export interface MarketplaceService {
   isFollowingDesigner(designerId: string, followerId: string): Promise<boolean>;
   followerCount(designerId: string): Promise<number>;
   sendMessage(senderId: string, recipientId: string, body: string): Promise<Message>;
+  listMessagesForProject(projectId: string, userId: string): Promise<Message[]>;
+  sendProjectMessage(projectId: string, senderId: string, body: string): Promise<Message>;
   listMessagesForUser(userId: string): Promise<Message[]>;
 }
 
@@ -67,6 +79,17 @@ const PROJECTS_KEY = 'marketplace:projects';
 const REVIEWS_KEY = 'marketplace:reviews';
 const FOLLOWS_KEY = 'marketplace:follows';
 const MESSAGES_KEY = 'marketplace:messages';
+const PROJECT_FILES_KEY = 'marketplace:project-files';
+const PROJECT_INVITES_KEY = 'marketplace:project-invites';
+const PROGRESS_UPDATES_KEY = 'marketplace:progress-updates';
+
+const seededJobPosterById: Record<string, string> = {
+  job_house_cebu: 'u_ramon',
+  job_shop_tag: 'u_nico',
+  job_house_davao: 'u_carlo',
+  job_warehouse_cavite: 'u_bea',
+  job_condo_manila: 'u_ana',
+};
 
 const seededAt = '2026-09-21T02:00:00.000Z';
 
@@ -219,13 +242,21 @@ function additionalSeededJobs(): Job[] {
   };
   return [
     { id: 'job_house_marikina', clientId: 'u_maria', title: 'Two-storey home electrical layout', projectType: 'design_plan', buildingType: 'residential', location: 'Marikina', budgetMin: 18000, budgetMax: 30000, scope: 'Electrical layout and load schedule for a new family home.', intake, status: 'open', createdAt: seededAt },
-    { id: 'job_shop_tag', clientId: 'u_juan', title: 'Retail shop lighting upgrade', projectType: 'installation', buildingType: 'commercial', location: 'Taguig', budgetMin: 22000, budgetMax: 38000, scope: 'Replace outdated fixtures and add efficient lighting for a small retail shop.', intake, status: 'open', createdAt: seededAt },
+    { id: 'job_shop_tag', clientId: 'u_nico', title: 'Retail shop lighting upgrade', projectType: 'installation', buildingType: 'commercial', location: 'Taguig', budgetMin: 22000, budgetMax: 38000, scope: 'Replace outdated fixtures and add efficient lighting for a small retail shop.', intake, status: 'open', createdAt: seededAt },
     { id: 'job_office_makati', clientId: 'u_maria', title: 'Office fit-out load study', projectType: 'load_calculation', buildingType: 'commercial', location: 'Makati', budgetMin: 28000, budgetMax: 45000, scope: 'Load study and panel schedule for a 120 sqm office fit-out.', intake, status: 'open', createdAt: seededAt },
-    { id: 'job_house_davao', clientId: 'u_juan', title: 'Residential panel inspection', projectType: 'maintenance', buildingType: 'residential', location: 'Davao City', budgetMin: 9000, budgetMax: 16000, scope: 'Inspect an aging residential panel and provide safety recommendations.', intake, status: 'open', createdAt: seededAt },
+    { id: 'job_house_davao', clientId: 'u_carlo', title: 'Residential panel inspection', projectType: 'maintenance', buildingType: 'residential', location: 'Davao City', budgetMin: 9000, budgetMax: 16000, scope: 'Inspect an aging residential panel and provide safety recommendations.', intake, status: 'open', createdAt: seededAt },
     { id: 'job_cafe_pasig', clientId: 'u_maria', title: 'Cafe power distribution plan', projectType: 'design_plan', buildingType: 'commercial', location: 'Pasig', budgetMin: 24000, budgetMax: 42000, scope: 'Coordinate power points, kitchen loads, and panel schedules for a cafe renovation.', intake, status: 'open', createdAt: seededAt },
-    { id: 'job_warehouse_cavite', clientId: 'u_juan', title: 'Warehouse preventive maintenance', projectType: 'maintenance', buildingType: 'industrial', location: 'Cavite', budgetMin: 30000, budgetMax: 52000, scope: 'Inspect warehouse distribution panels and prepare a maintenance checklist.', intake, status: 'open', createdAt: seededAt },
+    { id: 'job_warehouse_cavite', clientId: 'u_bea', title: 'Warehouse preventive maintenance', projectType: 'maintenance', buildingType: 'industrial', location: 'Cavite', budgetMin: 30000, budgetMax: 52000, scope: 'Inspect warehouse distribution panels and prepare a maintenance checklist.', intake, status: 'open', createdAt: seededAt },
     { id: 'job_clinic_pasay', clientId: 'u_maria', title: 'Clinic electrical documentation', projectType: 'other', projectTypeOther: 'Electrical documentation', buildingType: 'commercial', location: 'Pasay', budgetMin: 15000, budgetMax: 26000, scope: 'Document existing circuits and prepare a clear handover pack for a clinic.', intake, status: 'open', createdAt: seededAt },
-    { id: 'job_condo_manila', clientId: 'u_juan', title: 'Condo unit load calculation', projectType: 'load_calculation', buildingType: 'residential', location: 'Manila', budgetMin: 12000, budgetMax: 22000, scope: 'Calculate connected loads for a compact condo renovation.', intake, status: 'open', createdAt: seededAt },
+    { id: 'job_condo_manila', clientId: 'u_ana', title: 'Condo unit load calculation', projectType: 'load_calculation', buildingType: 'residential', location: 'Manila', budgetMin: 12000, budgetMax: 22000, scope: 'Calculate connected loads for a compact condo renovation.', intake, status: 'open', createdAt: seededAt },
+    { id: 'job_lighting_cad_makati', clientId: 'u_bea', title: 'Lighting layout plan in CAD', projectType: 'design_plan', buildingType: 'commercial', location: 'Makati', budgetMin: 26000, budgetMax: 48000, scope: 'Create a coordinated lighting layout in CAD for a boutique office, including fixture schedules and switching zones.', intake, status: 'open', createdAt: seededAt },
+    { id: 'job_power_layout_qc', clientId: 'u_ana', title: 'Power layout plan for retail fit-out', projectType: 'design_plan', buildingType: 'commercial', location: 'Quezon City', budgetMin: 30000, budgetMax: 55000, scope: 'Prepare a CAD power layout for receptacles, dedicated equipment, and panel connections in a retail fit-out.', intake, status: 'open', createdAt: seededAt },
+    { id: 'job_residential_cad_manila', clientId: 'u_paolo', title: 'Residential electrical CAD drafting', projectType: 'design_plan', buildingType: 'residential', location: 'Manila', budgetMin: 14000, budgetMax: 24000, scope: 'Draft a clean residential lighting and power plan from the architectural floor plan for supervised design review.', intake, status: 'open', createdAt: seededAt },
+    { id: 'job_panel_schedule_pasig', clientId: 'u_carlo', title: 'Panel schedule and single-line diagram', projectType: 'load_calculation', buildingType: 'commercial', location: 'Pasig', budgetMin: 22000, budgetMax: 40000, scope: 'Develop a panel schedule and single-line diagram for a small commercial renovation package.', intake, status: 'open', createdAt: seededAt },
+    { id: 'job_warehouse_power_cavite', clientId: 'u_nico', title: 'Warehouse power distribution layout', projectType: 'design_plan', buildingType: 'industrial', location: 'Cavite', budgetMin: 42000, budgetMax: 70000, scope: 'Lay out feeders, equipment connections, and distribution panels for a warehouse power upgrade.', intake, status: 'open', createdAt: seededAt },
+    { id: 'job_house_lighting_davao', clientId: 'u_ramon', title: 'House lighting and load schedule', projectType: 'load_calculation', buildingType: 'residential', location: 'Davao City', budgetMin: 16000, budgetMax: 28000, scope: 'Prepare a lighting load schedule and practical circuit recommendations for a two-storey home renovation.', intake, status: 'open', createdAt: seededAt },
+    { id: 'job_maria_collaboration', clientId: 'u_maria', title: 'Cafe fit-out collaboration package', projectType: 'design_plan', buildingType: 'commercial', location: 'Quezon City', budgetMin: 36000, budgetMax: 58000, scope: 'Coordinate a lighting layout, power plan, and load schedule for a cafe fit-out with a shared review workspace.', intake, status: 'assigned', acceptedProposalId: 'prop_maria_collaboration', createdAt: seededAt },
+    { id: 'job_maria_ree_winner', clientId: 'u_bea', title: 'Residential lighting and power CAD package', projectType: 'design_plan', buildingType: 'residential', location: 'Taguig', budgetMin: 28000, budgetMax: 46000, scope: 'Prepare coordinated CAD lighting and power layouts, circuit schedules, and a client-ready electrical plan package.', intake, status: 'assigned', acceptedProposalId: 'prop_maria_ree_winner', createdAt: seededAt },
   ];
 }
 
@@ -285,6 +316,54 @@ function seededProposals(): Proposal[] {
       status: 'pending',
       createdAt: seededAt,
     },
+    {
+      id: 'prop_maria_collaboration',
+      jobId: 'job_maria_collaboration',
+      designerId: 'u_ana',
+      price: 46500,
+      timelineDays: 14,
+      message: 'I will prepare the coordinated lighting and power layouts, load schedule, and review-ready CAD package.',
+      status: 'accepted',
+      createdAt: seededAt,
+    },
+    {
+      id: 'prop_maria_ree_winner',
+      jobId: 'job_maria_ree_winner',
+      designerId: 'u_maria',
+      price: 38500,
+      timelineDays: 12,
+      message: 'I will deliver the lighting and power CAD layouts, circuit schedules, and a coordinated electrical plan package for review.',
+      status: 'accepted',
+      createdAt: seededAt,
+    },
+  ];
+}
+
+function seededProjects(): Project[] {
+  return [
+    {
+      id: 'proj_maria_collaboration',
+      jobId: 'job_maria_collaboration',
+      proposalId: 'prop_maria_collaboration',
+      clientId: 'u_maria',
+      designerId: 'u_ana',
+      title: 'Cafe fit-out collaboration package',
+      status: 'active',
+      collaboratorIds: ['u_bea', 'u_carlo'],
+      progressPercent: 42,
+      createdAt: seededAt,
+    },
+    {
+      id: 'proj_maria_ree_winner',
+      jobId: 'job_maria_ree_winner',
+      proposalId: 'prop_maria_ree_winner',
+      clientId: 'u_bea',
+      designerId: 'u_maria',
+      title: 'Residential lighting and power CAD package',
+      status: 'active',
+      progressPercent: 18,
+      createdAt: seededAt,
+    },
   ];
 }
 
@@ -311,6 +390,82 @@ function seededReviews(): Review[] {
   ];
 }
 
+function seededMessages(): Message[] {
+  return [
+    {
+      id: 'msg_maria_ana_1',
+      projectId: 'proj_maria_collaboration',
+      senderId: 'u_ana',
+      recipientId: 'u_maria',
+      body: 'The first lighting and power layout draft is ready for your review. I have also added the initial load schedule.',
+      createdAt: '2026-09-21T03:15:00.000Z',
+    },
+    {
+      id: 'msg_maria_ana_2',
+      projectId: 'proj_maria_collaboration',
+      senderId: 'u_maria',
+      recipientId: 'u_ana',
+      body: 'Thanks. I will review the fixture locations and confirm the kitchen equipment loads today.',
+      createdAt: '2026-09-21T03:40:00.000Z',
+    },
+    {
+      id: 'msg_maria_bea_1',
+      projectId: 'proj_maria_collaboration',
+      senderId: 'u_bea',
+      recipientId: 'u_maria',
+      body: 'I joined the workspace and can help check the residential lighting references against the client brief.',
+      createdAt: '2026-09-21T04:05:00.000Z',
+    },
+    {
+      id: 'msg_maria_carlo_1',
+      projectId: 'proj_maria_collaboration',
+      senderId: 'u_maria',
+      recipientId: 'u_carlo',
+      body: 'Carlo, please review the single-line diagram once Ana uploads the next revision.',
+      createdAt: '2026-09-21T04:20:00.000Z',
+    },
+    {
+      id: 'msg_bea_maria_1',
+      projectId: 'proj_maria_ree_winner',
+      senderId: 'u_bea',
+      recipientId: 'u_maria',
+      body: 'Maria, please prioritize the living room lighting zones and the dedicated kitchen circuits in the first CAD draft.',
+      createdAt: '2026-09-21T04:35:00.000Z',
+    },
+    {
+      id: 'msg_maria_bea_2',
+      projectId: 'proj_maria_ree_winner',
+      senderId: 'u_maria',
+      recipientId: 'u_bea',
+      body: 'Understood. I will upload the first coordinated layout and circuit schedule for your review.',
+      createdAt: '2026-09-21T04:50:00.000Z',
+    },
+  ];
+}
+
+function seededProgressUpdates(): ProgressUpdateStore {
+  return {
+    proj_maria_collaboration: [
+      {
+        id: 'progress_maria_ana_1',
+        projectId: 'proj_maria_collaboration',
+        progressPercent: 42,
+        report: 'Completed the first lighting and power layout draft and added the initial load schedule for review.',
+        updatedBy: 'u_ana',
+        createdAt: '2026-09-21T03:10:00.000Z',
+      },
+      {
+        id: 'progress_maria_ana_2',
+        projectId: 'proj_maria_collaboration',
+        progressPercent: 28,
+        report: 'Set up the CAD base, coordinated the architectural reference, and marked the main electrical zones.',
+        updatedBy: 'u_ana',
+        createdAt: '2026-09-21T02:45:00.000Z',
+      },
+    ],
+  };
+}
+
 function readProfiles(): DesignerProfile[] {
   const existing = load<DesignerProfile[] | null>(PROFILES_KEY, null);
   if (existing) {
@@ -328,10 +483,11 @@ function readProfiles(): DesignerProfile[] {
 function readJobs(): Job[] {
   const existing = load<Job[] | null>(JOBS_KEY, null);
   if (existing) {
-    const knownIds = new Set(existing.map((job) => job.id));
+    const migrated = existing.map((job) => seededJobPosterById[job.id] ? { ...job, clientId: seededJobPosterById[job.id] } : job);
+    const knownIds = new Set(migrated.map((job) => job.id));
     const missingJobs = seededJobs().filter((job) => !knownIds.has(job.id));
-    const complete = [...existing, ...missingJobs];
-    if (missingJobs.length > 0) save(JOBS_KEY, complete);
+    const complete = [...migrated, ...missingJobs];
+    if (missingJobs.length > 0 || migrated.some((job, index) => job !== existing[index])) save(JOBS_KEY, complete);
     return complete;
   }
   const seeded = seededJobs();
@@ -345,7 +501,13 @@ function writeJobs(jobs: Job[]): void {
 
 function readProposals(): Proposal[] {
   const existing = load<Proposal[] | null>(PROPOSALS_KEY, null);
-  if (existing) return existing;
+  if (existing) {
+    const knownIds = new Set(existing.map((proposal) => proposal.id));
+    const missing = seededProposals().filter((proposal) => !knownIds.has(proposal.id));
+    const complete = [...existing, ...missing];
+    if (missing.length > 0) save(PROPOSALS_KEY, complete);
+    return complete;
+  }
   const seeded = seededProposals();
   save(PROPOSALS_KEY, seeded);
   return seeded;
@@ -356,11 +518,67 @@ function writeProposals(proposals: Proposal[]): void {
 }
 
 function readProjects(): Project[] {
-  return load<Project[]>(PROJECTS_KEY, []);
+  const existing = load<Project[] | null>(PROJECTS_KEY, null);
+  if (existing) {
+    const seededById = new Map(seededProjects().map((project) => [project.id, project]));
+    const migrated = existing.map((project) => {
+      const seeded = seededById.get(project.id);
+      if (!seeded) return project;
+      return {
+        ...project,
+        collaboratorIds: project.collaboratorIds ?? seeded.collaboratorIds,
+        progressPercent: project.progressPercent ?? seeded.progressPercent,
+      };
+    });
+    const knownIds = new Set(migrated.map((project) => project.id));
+    const missing = seededProjects().filter((project) => !knownIds.has(project.id));
+    const complete = [...migrated, ...missing];
+    if (missing.length > 0 || migrated.some((project, index) => project !== existing[index])) save(PROJECTS_KEY, complete);
+    return complete;
+  }
+  const seeded = seededProjects();
+  save(PROJECTS_KEY, seeded);
+  return seeded;
 }
 
 function writeProjects(projects: Project[]): void {
   save(PROJECTS_KEY, projects);
+}
+
+type ProjectFileStore = Record<string, ProjectFile[]>;
+type ProgressUpdateStore = Record<string, ProgressUpdate[]>;
+
+function readProjectFiles(): ProjectFileStore {
+  return load<ProjectFileStore>(PROJECT_FILES_KEY, {});
+}
+
+function writeProjectFiles(files: ProjectFileStore): void {
+  save(PROJECT_FILES_KEY, files);
+}
+
+function readProgressUpdates(): ProgressUpdateStore {
+  const existing = load<ProgressUpdateStore | null>(PROGRESS_UPDATES_KEY, null);
+  const seeded = seededProgressUpdates();
+  if (!existing) {
+    save(PROGRESS_UPDATES_KEY, seeded);
+    return seeded;
+  }
+  const merged = { ...existing };
+  let changed = false;
+  Object.entries(seeded).forEach(([projectId, updates]) => {
+    const knownIds = new Set((merged[projectId] ?? []).map((update) => update.id));
+    const missing = updates.filter((update) => !knownIds.has(update.id));
+    if (missing.length > 0) {
+      merged[projectId] = [...(merged[projectId] ?? []), ...missing];
+      changed = true;
+    }
+  });
+  if (changed) save(PROGRESS_UPDATES_KEY, merged);
+  return merged;
+}
+
+function writeProgressUpdates(updates: ProgressUpdateStore): void {
+  save(PROGRESS_UPDATES_KEY, updates);
 }
 
 function readReviews(): Review[] {
@@ -386,7 +604,17 @@ function writeFollows(follows: FollowStore): void {
 }
 
 function readMessages(): Message[] {
-  return load<Message[]>(MESSAGES_KEY, []);
+  const existing = load<Message[] | null>(MESSAGES_KEY, null);
+  if (existing) {
+    const knownIds = new Set(existing.map((message) => message.id));
+    const missing = seededMessages().filter((message) => !knownIds.has(message.id));
+    const complete = [...existing, ...missing];
+    if (missing.length > 0) save(MESSAGES_KEY, complete);
+    return complete;
+  }
+  const seeded = seededMessages();
+  save(MESSAGES_KEY, seeded);
+  return seeded;
 }
 
 function writeMessages(messages: Message[]): void {
@@ -515,7 +743,11 @@ export const localMarketplaceService: MarketplaceService = {
     validateJobInput(input);
     const users = await usersById();
     const client = users.get(clientId);
-    if (client?.role !== 'client') throw new Error('Only clients can post jobs.');
+    const canPostAsProfessional =
+      (client?.role === 'designer' || client?.role === 'pee_reviewer') && client.verification === 'verified';
+    if (client?.role !== 'client' && !canPostAsProfessional) {
+      throw new Error('Only clients or verified professional accounts can post jobs.');
+    }
 
     const job: Job = {
       id: uid('job'),
@@ -551,6 +783,12 @@ export const localMarketplaceService: MarketplaceService = {
       .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
   },
 
+  async listProposalsForDesigner(designerId) {
+    return readProposals()
+      .filter((proposal) => proposal.designerId === designerId)
+      .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+  },
+
   async submitProposal(jobId, designerId, input) {
     validateProposalInput(input);
     const job = await this.getJob(jobId);
@@ -562,8 +800,8 @@ export const localMarketplaceService: MarketplaceService = {
       throw new Error('Only designers can submit proposals.');
     }
     if (!designer.tier) throw new Error('A license tier is required before submitting proposals.');
-    if (TIERS[designer.tier].requiresLicense && designer.verification !== 'verified') {
-      throw new Error('PRC verification must be approved before submitting proposals.');
+    if (designer.verification !== 'verified') {
+      throw new Error('Please wait for an admin to verify your account before taking jobs.');
     }
     if (isDesignWork(job) && !TIERS[designer.tier].canDesign) {
       throw new Error('RMEs cannot submit design proposals. They may bid on installation or maintenance work.');
@@ -589,6 +827,24 @@ export const localMarketplaceService: MarketplaceService = {
     };
     writeProposals([proposal, ...proposals]);
     return proposal;
+  },
+
+  async updateProposal(proposalId, designerId, input) {
+    validateProposalInput(input);
+    const proposals = readProposals();
+    const proposal = proposals.find((item) => item.id === proposalId);
+    if (!proposal) throw new Error('Proposal not found.');
+    if (proposal.designerId !== designerId) throw new Error('You can only edit your own proposals.');
+    if (proposal.status !== 'pending') throw new Error('Only pending proposals can be edited.');
+
+    const updated = {
+      ...proposal,
+      price: Math.round(input.price),
+      timelineDays: input.timelineDays,
+      message: input.message.trim(),
+    };
+    writeProposals(proposals.map((item) => (item.id === proposalId ? updated : item)));
+    return updated;
   },
 
   async acceptProposal(proposalId, clientId) {
@@ -632,7 +888,7 @@ export const localMarketplaceService: MarketplaceService = {
 
   async listProjectsForUser(userId) {
     return readProjects()
-      .filter((project) => project.clientId === userId || project.designerId === userId)
+      .filter((project) => project.clientId === userId || project.designerId === userId || project.collaboratorIds?.includes(userId))
       .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
   },
 
@@ -640,6 +896,83 @@ export const localMarketplaceService: MarketplaceService = {
     const project = readProjects().find((item) => item.id === projectId);
     if (!project) throw new Error('Project not found.');
     return project;
+  },
+
+  async updateProjectProgress(projectId, userId, progressPercent, report) {
+    const projects = readProjects();
+    const project = projects.find((item) => item.id === projectId);
+    if (!project) throw new Error('Project not found.');
+    if (project.designerId !== userId) throw new Error('Only the assigned designer can update project progress.');
+    if (!Number.isInteger(progressPercent) || progressPercent < 0 || progressPercent > 100) {
+      throw new Error('Progress must be a whole number from 0 to 100.');
+    }
+    if (!report.trim()) throw new Error('Add a short report describing what was done.');
+    const updated = { ...project, progressPercent };
+    writeProjects(projects.map((item) => (item.id === projectId ? updated : item)));
+    const progressUpdates = readProgressUpdates();
+    const update: ProgressUpdate = {
+      id: uid('progress'),
+      projectId,
+      progressPercent,
+      report: report.trim(),
+      updatedBy: userId,
+      createdAt: new Date().toISOString(),
+    };
+    progressUpdates[projectId] = [update, ...(progressUpdates[projectId] ?? [])];
+    writeProgressUpdates(progressUpdates);
+    return updated;
+  },
+
+  async listProgressUpdates(projectId, userId) {
+    const project = await this.getProject(projectId);
+    const isMember = project.clientId === userId || project.designerId === userId || project.collaboratorIds?.includes(userId);
+    if (!isMember) throw new Error('Only project members can view progress reports.');
+    return readProgressUpdates()[projectId] ?? [];
+  },
+
+  async listProjectFiles(projectId) {
+    await this.getProject(projectId);
+    return readProjectFiles()[projectId] ?? [];
+  },
+
+  async uploadProjectFile(projectId, userId, file) {
+    const project = await this.getProject(projectId);
+    if (project.clientId !== userId && project.designerId !== userId && !project.collaboratorIds?.includes(userId)) {
+      throw new Error('Only project members can upload files.');
+    }
+    if (!file.name.trim()) throw new Error('File name is required.');
+    if (file.size > 2 * 1024 * 1024) throw new Error('Files must be 2 MB or smaller.');
+    const projectFiles = readProjectFiles();
+    const uploaded: ProjectFile = {
+      ...file,
+      id: uid('file'),
+      projectId,
+      name: file.name.trim(),
+      uploadedBy: userId,
+      createdAt: new Date().toISOString(),
+    };
+    projectFiles[projectId] = [uploaded, ...(projectFiles[projectId] ?? [])];
+    writeProjectFiles(projectFiles);
+    return uploaded;
+  },
+
+  getProjectInviteLink(projectId) {
+    const invites = load<Record<string, string>>(PROJECT_INVITES_KEY, {});
+    const token = invites[projectId] ?? uid('invite');
+    if (!invites[projectId]) save(PROJECT_INVITES_KEY, { ...invites, [projectId]: token });
+    const configuredOrigin = import.meta.env.VITE_PUBLIC_APP_URL?.trim().replace(/\/$/, '');
+    const origin = configuredOrigin || (typeof window === 'undefined' ? '' : window.location.origin);
+    return `${origin}/projects/${projectId}?invite=${encodeURIComponent(token)}`;
+  },
+
+  async joinProjectByInvite(projectId, token, userId) {
+    const project = await this.getProject(projectId);
+    const invites = load<Record<string, string>>(PROJECT_INVITES_KEY, {});
+    if (!token || invites[projectId] !== token) throw new Error('This project invite link is invalid.');
+    if (project.clientId === userId || project.designerId === userId || project.collaboratorIds?.includes(userId)) return project;
+    const updated = { ...project, collaboratorIds: [...(project.collaboratorIds ?? []), userId] };
+    writeProjects(readProjects().map((item) => (item.id === projectId ? updated : item)));
+    return updated;
   },
 
   async completeProject(projectId, userId) {
@@ -719,6 +1052,32 @@ export const localMarketplaceService: MarketplaceService = {
       id: uid('msg'),
       senderId,
       recipientId,
+      body: body.trim(),
+      createdAt: new Date().toISOString(),
+    };
+    writeMessages([message, ...readMessages()]);
+    return message;
+  },
+
+  async listMessagesForProject(projectId, userId) {
+    const project = await this.getProject(projectId);
+    const isMember = project.clientId === userId || project.designerId === userId || project.collaboratorIds?.includes(userId);
+    if (!isMember) throw new Error('Only project members can view this conversation.');
+    return readMessages()
+      .filter((message) => message.projectId === projectId)
+      .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
+  },
+
+  async sendProjectMessage(projectId, senderId, body) {
+    const project = await this.getProject(projectId);
+    const isMember = project.clientId === senderId || project.designerId === senderId || project.collaboratorIds?.includes(senderId);
+    if (!isMember) throw new Error('Only project members can send messages here.');
+    if (!body.trim()) throw new Error('Write a message first.');
+    const message: Message = {
+      id: uid('msg'),
+      projectId,
+      senderId,
+      recipientId: project.clientId,
       body: body.trim(),
       createdAt: new Date().toISOString(),
     };
