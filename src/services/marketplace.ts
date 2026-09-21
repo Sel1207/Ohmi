@@ -174,6 +174,18 @@ function seededProfiles(): DesignerProfile[] {
         },
       ],
     },
+    {
+      userId: 'u_bea', headline: 'REE for residential layouts and lighting plans', bio: 'Electrical engineer focused on practical residential design and clear client handoffs.', location: 'Taguig', specialties: ['Residential design', 'Lighting'], proposalsSent: 16, portfolio: [],
+    },
+    {
+      userId: 'u_nico', headline: 'RME for safe installations and panel upgrades', bio: 'Field-focused registered master electrician for installation planning and maintenance work.', location: 'Cavite', specialties: ['Installation', 'Panel upgrades'], proposalsSent: 12, portfolio: [],
+    },
+    {
+      userId: 'u_liza', headline: 'PEE for commercial review and sign-and-seal coordination', bio: 'Senior reviewer helping project teams resolve technical comments before submission.', location: 'Pasay', specialties: ['Commercial review', 'Sign and seal'], proposalsSent: 22, portfolio: [],
+    },
+    {
+      userId: 'u_omar', headline: 'Student practitioner for load schedules and site documentation', bio: 'Student practitioner building experience through careful documentation and supervised coordination.', location: 'Marikina', specialties: ['Load schedules', 'Site documentation'], proposalsSent: 6, portfolio: [],
+    },
   ];
 }
 
@@ -192,8 +204,27 @@ function defaultProfileFor(user: User): DesignerProfile {
   };
 }
 
-function seededJobs(): Job[] {
+function additionalSeededJobs(): Job[] {
+  const intake: Job['intake'] = {
+    kvaRating: { unknown: true },
+    floorAreaSqm: { unknown: true },
+    breakerCount: { unknown: true },
+    storeys: { unknown: true },
+  };
   return [
+    { id: 'job_house_marikina', clientId: 'u_maria', title: 'Two-storey home electrical layout', projectType: 'design_plan', buildingType: 'residential', location: 'Marikina', budgetMin: 18000, budgetMax: 30000, scope: 'Electrical layout and load schedule for a new family home.', intake, status: 'open', createdAt: seededAt },
+    { id: 'job_shop_tag', clientId: 'u_juan', title: 'Retail shop lighting upgrade', projectType: 'installation', buildingType: 'commercial', location: 'Taguig', budgetMin: 22000, budgetMax: 38000, scope: 'Replace outdated fixtures and add efficient lighting for a small retail shop.', intake, status: 'open', createdAt: seededAt },
+    { id: 'job_office_makati', clientId: 'u_maria', title: 'Office fit-out load study', projectType: 'load_calculation', buildingType: 'commercial', location: 'Makati', budgetMin: 28000, budgetMax: 45000, scope: 'Load study and panel schedule for a 120 sqm office fit-out.', intake, status: 'open', createdAt: seededAt },
+    { id: 'job_house_davao', clientId: 'u_juan', title: 'Residential panel inspection', projectType: 'maintenance', buildingType: 'residential', location: 'Davao City', budgetMin: 9000, budgetMax: 16000, scope: 'Inspect an aging residential panel and provide safety recommendations.', intake, status: 'open', createdAt: seededAt },
+    { id: 'job_cafe_pasig', clientId: 'u_maria', title: 'Cafe power distribution plan', projectType: 'design_plan', buildingType: 'commercial', location: 'Pasig', budgetMin: 24000, budgetMax: 42000, scope: 'Coordinate power points, kitchen loads, and panel schedules for a cafe renovation.', intake, status: 'open', createdAt: seededAt },
+    { id: 'job_warehouse_cavite', clientId: 'u_juan', title: 'Warehouse preventive maintenance', projectType: 'maintenance', buildingType: 'industrial', location: 'Cavite', budgetMin: 30000, budgetMax: 52000, scope: 'Inspect warehouse distribution panels and prepare a maintenance checklist.', intake, status: 'open', createdAt: seededAt },
+    { id: 'job_clinic_pasay', clientId: 'u_maria', title: 'Clinic electrical documentation', projectType: 'other', projectTypeOther: 'Electrical documentation', buildingType: 'commercial', location: 'Pasay', budgetMin: 15000, budgetMax: 26000, scope: 'Document existing circuits and prepare a clear handover pack for a clinic.', intake, status: 'open', createdAt: seededAt },
+    { id: 'job_condo_manila', clientId: 'u_juan', title: 'Condo unit load calculation', projectType: 'load_calculation', buildingType: 'residential', location: 'Manila', budgetMin: 12000, budgetMax: 22000, scope: 'Calculate connected loads for a compact condo renovation.', intake, status: 'open', createdAt: seededAt },
+  ];
+}
+
+function seededJobs(): Job[] {
+  const baseJobs: Job[] = [
     {
       id: 'job_cafe_qc',
       clientId: 'u_maria',
@@ -233,6 +264,7 @@ function seededJobs(): Job[] {
       createdAt: seededAt,
     },
   ];
+  return baseJobs.concat(additionalSeededJobs());
 }
 
 function seededProposals(): Proposal[] {
@@ -275,7 +307,13 @@ function seededReviews(): Review[] {
 
 function readProfiles(): DesignerProfile[] {
   const existing = load<DesignerProfile[] | null>(PROFILES_KEY, null);
-  if (existing) return existing;
+  if (existing) {
+    const knownIds = new Set(existing.map((profile) => profile.userId));
+    const missingProfiles = seededProfiles().filter((profile) => !knownIds.has(profile.userId));
+    const complete = [...existing, ...missingProfiles];
+    if (missingProfiles.length > 0) save(PROFILES_KEY, complete);
+    return complete;
+  }
   const seeded = seededProfiles();
   save(PROFILES_KEY, seeded);
   return seeded;
@@ -283,7 +321,13 @@ function readProfiles(): DesignerProfile[] {
 
 function readJobs(): Job[] {
   const existing = load<Job[] | null>(JOBS_KEY, null);
-  if (existing) return existing;
+  if (existing) {
+    const knownIds = new Set(existing.map((job) => job.id));
+    const missingJobs = seededJobs().filter((job) => !knownIds.has(job.id));
+    const complete = [...existing, ...missingJobs];
+    if (missingJobs.length > 0) save(JOBS_KEY, complete);
+    return complete;
+  }
   const seeded = seededJobs();
   save(JOBS_KEY, seeded);
   return seeded;
