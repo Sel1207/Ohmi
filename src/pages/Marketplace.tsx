@@ -4,7 +4,7 @@ import { BUILDING_TYPE_LABELS, projectTypeLabel } from '../constants/marketplace
 import { TIER_ORDER } from '../constants/tiers';
 import { TierBadge } from '../components/TierBadge';
 import { Avatar } from '../components/Avatar';
-import { marketplaceService } from '../services';
+import { authService, marketplaceService } from '../services';
 import type { BuildingType, DesignerProfileView, Job, MarketplaceFilters, TierId } from '../types';
 import { formatDate, formatPeso } from '../utils/format';
 import { errorMessage } from '../utils/errors';
@@ -19,6 +19,7 @@ export function Marketplace() {
   const [maxBudget, setMaxBudget] = useState('');
   const [designers, setDesigners] = useState<DesignerProfileView[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [members, setMembers] = useState<Record<string, { name: string; avatarUrl?: string }>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,13 +40,15 @@ export function Marketplace() {
       setLoading(true);
       setError(null);
       try {
-        const [profileData, jobData] = await Promise.all([
+        const [profileData, jobData, userData] = await Promise.all([
           marketplaceService.listDesignerProfiles(filters),
           marketplaceService.listJobs(filters),
+          authService.listUsers(),
         ]);
         if (!alive) return;
         setDesigners(profileData);
         setJobs(jobData);
+        setMembers(Object.fromEntries(userData.map((member) => [member.id, member])));
       } catch (err) {
         if (alive) setError(errorMessage(err));
       } finally {
@@ -175,7 +178,8 @@ export function Marketplace() {
               <div className="card empty-state">No open jobs match these filters.</div>
             ) : (
               jobs.map((job) => (
-                <Link className="card job-card" to={`/jobs/${job.id}`} key={job.id}>
+                <article className="card job-card" key={job.id}>
+                  <Link className="job-card-link" to={`/jobs/${job.id}`}>
                   <div className="split-row">
                     <div className="job-copy">
                       <strong>{job.title}</strong>
@@ -192,7 +196,12 @@ export function Marketplace() {
                     <span>{formatDate(job.createdAt)}</span>
                   </div>
                   <div className="job-location">Location: {job.location}</div>
-                </Link>
+                  </Link>
+                  <Link className="job-poster" to={`/profiles/${job.clientId}`}>
+                    <Avatar name={members[job.clientId]?.name ?? 'Ohmi member'} src={members[job.clientId]?.avatarUrl} size="sm" />
+                    <span>Posted by {members[job.clientId]?.name ?? 'Ohmi member'} - View profile</span>
+                  </Link>
+                </article>
               ))
             )}
           </section>

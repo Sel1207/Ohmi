@@ -742,6 +742,21 @@ a.list-card:hover {
   padding: 18px;
 }
 
+.job-card-link {
+  display: grid;
+  gap: 12px;
+  color: inherit;
+}
+
+.job-poster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--brand);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
 .job-copy {
   display: grid;
   gap: 6px;

@@ -16,6 +16,7 @@ import { Messages } from './pages/Messages';
 import { NotFound } from './pages/NotFound';
 import { ProjectDetail } from './pages/ProjectDetail';
 import { Profile } from './pages/Profile';
+import { PublicProfile } from './pages/PublicProfile';
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
             <Route path="login" element={<Login />} />
             <Route path="marketplace" element={<Marketplace />} />
             <Route path="designers/:id" element={<DesignerProfile />} />
+            <Route path="profiles/:id" element={<PublicProfile />} />
             <Route
               path="profile"
               element={
