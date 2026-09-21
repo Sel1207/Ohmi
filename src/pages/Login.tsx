@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { DEMO_ACCOUNTS, DEMO_PASSWORD } from '../constants/demo';
+import { DEMO_PASSWORD } from '../constants/demo';
 import { TIER_ORDER } from '../constants/tiers';
 import { useAuth } from '../hooks/useAuth';
 import type { SignupInput, SignupRole } from '../services/auth';
@@ -55,13 +55,6 @@ export function Login() {
     } catch (err) {
       setFormError(errorMessage(err));
     }
-  };
-
-  const pickDemo = (demoEmail: string) => {
-    setMode('login');
-    setEmail(demoEmail);
-    setPassword(DEMO_PASSWORD);
-    setFormError(null);
   };
 
   return (
@@ -172,14 +165,6 @@ export function Login() {
           </button>
         </form>
 
-        <div className="demo-list">
-          <strong>Quick fill demo account</strong>
-          {DEMO_ACCOUNTS.map((account) => (
-            <button className="btn btn-ghost" type="button" key={account.email} onClick={() => pickDemo(account.email)}>
-              {account.label}
-            </button>
-          ))}
-        </div>
       </section>
     </main>
   );
