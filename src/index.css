@@ -435,6 +435,16 @@ small {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.dashboard-columns {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  align-items: start;
+}
+
+.dashboard-panel {
+  min-width: 0;
+  align-content: start;
+}
+
 .grid.uneven {
   grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
 }
@@ -607,6 +617,27 @@ textarea {
   line-height: 1.5;
 }
 
+.intake-section {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.intake-section legend {
+  padding-inline: 6px;
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.scope-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+}
+
 .check-row {
   gap: 8px;
   font-size: 0.9rem;
@@ -683,6 +714,30 @@ textarea {
 
 .list-card {
   gap: 4px;
+}
+
+.dashboard-list-card {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.dashboard-list-card strong,
+.dashboard-list-card small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-list-card .split-row {
+  min-width: 0;
+  align-items: flex-start;
+}
+
+.dashboard-list-card .split-row strong {
+  flex: 1 1 auto;
+}
+
+.dashboard-list-card .status-pill {
+  flex: 0 0 auto;
 }
 
 .profile-card > .stack,

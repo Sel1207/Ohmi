@@ -152,13 +152,13 @@ export function JobDetail() {
           </div>
           {!user ? (
             <div className="empty-state guest-proposal-state">
-              <p>Sign in as a designer to submit a proposal.</p>
+              <p>Sign in with a designer or PEE reviewer account to submit a proposal for this job.</p>
               <Link className="btn btn-primary" to="/login">
                 Sign in
               </Link>
             </div>
           ) : !canPropose ? (
-            <p className="muted">Only designer and PEE reviewer accounts can submit proposals.</p>
+            <p className="muted">Proposal submissions are available to designer and PEE reviewer accounts. Client accounts can post jobs and review incoming proposals.</p>
           ) : job.status !== 'open' ? (
             <p className="muted">This job is already assigned.</p>
           ) : (

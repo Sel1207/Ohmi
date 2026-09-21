@@ -44,7 +44,7 @@ export function Dashboard() {
   if (!user) return null;
 
   return (
-    <main className="page">
+    <main className="page dashboard-page">
       <section className="page-heading">
         <div>
           <p className="eyebrow">Workspace</p>
@@ -67,8 +67,8 @@ export function Dashboard() {
       {error ? <div className="alert error">{error}</div> : null}
 
       {!loading && !error ? (
-        <div className="grid two">
-          <section className="card stack">
+        <div className="grid two dashboard-columns">
+          <section className="card stack dashboard-panel">
             <div className="section-title">
               <h2>Projects</h2>
               <span className="count-pill">{projects.length}</span>
@@ -82,16 +82,20 @@ export function Dashboard() {
               </div>
             ) : (
               projects.map((project) => (
-                <Link className="list-card" to={`/projects/${project.id}`} key={project.id}>
-                  <strong>{project.title}</strong>
-                  <span>{project.status === 'completed' ? 'Completed' : 'Active'} project</span>
+                <Link className="list-card dashboard-list-card" to={`/projects/${project.id}`} key={project.id}>
+                  <div className="split-row">
+                    <strong>{project.title}</strong>
+                    <span className={`status-pill ${project.status === 'completed' ? 'completed' : 'active'}`}>
+                      {project.status}
+                    </span>
+                  </div>
                   <small>Created {formatDate(project.createdAt)}</small>
                 </Link>
               ))
             )}
           </section>
 
-          <section className="card stack">
+          <section className="card stack dashboard-panel">
             <div className="section-title">
               <h2>{user.role === 'client' ? 'Your posted jobs' : 'Next actions'}</h2>
               {user.role === 'client' ? <span className="count-pill">{jobs.length}</span> : null}

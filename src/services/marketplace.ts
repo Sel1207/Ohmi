@@ -9,6 +9,7 @@ import type {
   Proposal,
   Review,
   Message,
+  ProjectType,
   User,
 } from '../types';
 import { load, save, uid } from './storage';
@@ -18,6 +19,7 @@ export interface CreateJobInput {
   title: string;
   projectType: Job['projectType'];
   projectTypeOther?: string;
+  scopeTypes?: ProjectType[];
   projectStatus: Job['projectStatus'];
   buildingType: Job['buildingType'];
   powerType: Job['powerType'];
@@ -69,14 +71,14 @@ const MESSAGES_KEY = 'marketplace:messages';
 const seededAt = '2026-09-21T02:00:00.000Z';
 
 const seededAvatarByUserId: Record<string, string> = {
-  u_paolo: '/profile-paolo.svg',
-  u_ana: '/profile-ana.svg',
-  u_ramon: '/profile-ramon.svg',
-  u_carlo: '/profile-carlo.svg',
-  u_bea: '/profile-bea.svg',
-  u_nico: '/profile-nico.svg',
-  u_liza: '/profile-liza.svg',
-  u_omar: '/profile-omar.svg',
+  u_paolo: '/Profiles/Paolo%20Reyes.png',
+  u_ana: '/Profiles/Engr.%20Ana%20Villanueva.png',
+  u_ramon: '/Profiles/Ramon%20Bautista.png',
+  u_carlo: '/Profiles/Engr.%20Carlo%20Mendoza.png',
+  u_bea: '/Profiles/Engr.%20Bea%20Navarro.png',
+  u_nico: '/Profiles/Nico%20Garcia.png',
+  u_liza: '/Profiles/Engr.%20Liza%20Ramos.png',
+  u_omar: '/Profiles/Omar%20Villanueva.png',
 };
 
 function seededProfiles(): DesignerProfile[] {
@@ -521,6 +523,7 @@ export const localMarketplaceService: MarketplaceService = {
       title: input.title.trim(),
       projectType: input.projectType,
       projectTypeOther: input.projectTypeOther?.trim() || undefined,
+      scopeTypes: input.scopeTypes,
       projectStatus: input.projectStatus,
       buildingType: input.buildingType,
       powerType: input.powerType,

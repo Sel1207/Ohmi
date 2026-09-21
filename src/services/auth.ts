@@ -40,14 +40,14 @@ const USERS_KEY = 'users';
 const SESSION_KEY = 'session';
 
 const demoAvatarByUserId: Record<string, string> = {
-  u_paolo: '/profile-paolo.svg',
-  u_ana: '/profile-ana.svg',
-  u_ramon: '/profile-ramon.svg',
-  u_carlo: '/profile-carlo.svg',
-  u_bea: '/profile-bea.svg',
-  u_nico: '/profile-nico.svg',
-  u_liza: '/profile-liza.svg',
-  u_omar: '/profile-omar.svg',
+  u_paolo: '/Profiles/Paolo%20Reyes.png',
+  u_ana: '/Profiles/Engr.%20Ana%20Villanueva.png',
+  u_ramon: '/Profiles/Ramon%20Bautista.png',
+  u_carlo: '/Profiles/Engr.%20Carlo%20Mendoza.png',
+  u_bea: '/Profiles/Engr.%20Bea%20Navarro.png',
+  u_nico: '/Profiles/Nico%20Garcia.png',
+  u_liza: '/Profiles/Engr.%20Liza%20Ramos.png',
+  u_omar: '/Profiles/Omar%20Villanueva.png',
 };
 
 function seedUsers(): StoredUser[] {
@@ -62,14 +62,14 @@ function seedUsers(): StoredUser[] {
     make({ id: 'u_admin', name: 'Ohmi Admin', email: 'admin@ohmi.ph', role: 'admin', verification: 'verified', specialties: [] }),
     make({ id: 'u_maria', name: 'Maria Santos', email: 'maria@demo.ph', role: 'client', verification: 'verified', location: 'Quezon City', specialties: [] }),
     make({ id: 'u_juan', name: 'Juan dela Cruz', email: 'juan@demo.ph', role: 'client', verification: 'verified', location: 'Cebu City', specialties: [] }),
-    make({ id: 'u_paolo', name: 'Paolo Reyes', email: 'paolo@demo.ph', role: 'designer', tier: 'student', avatarUrl: '/profile-paolo.svg', verification: 'verified', location: 'Manila', specialties: ['Residential wiring'] }),
-    make({ id: 'u_ana', name: 'Engr. Ana Villanueva', email: 'ana@demo.ph', role: 'designer', tier: 'ree', avatarUrl: '/profile-ana.svg', prcNumber: '0012345', verification: 'verified', location: 'Makati', specialties: ['Commercial', 'Load calculation'] }),
-    make({ id: 'u_ramon', name: 'Ramon Bautista', email: 'ramon@demo.ph', role: 'designer', tier: 'rme', avatarUrl: '/profile-ramon.svg', prcNumber: '0004567', verification: 'pending', location: 'Davao City', specialties: ['Installation', 'Maintenance'] }),
-    make({ id: 'u_carlo', name: 'Engr. Carlo Mendoza', email: 'carlo@demo.ph', role: 'pee_reviewer', tier: 'pee', avatarUrl: '/profile-carlo.svg', prcNumber: '0000789', verification: 'verified', location: 'Pasig', specialties: ['Plan review', 'Sealing'] }),
-    make({ id: 'u_bea', name: 'Engr. Bea Navarro', email: 'bea@demo.ph', role: 'designer', tier: 'ree', avatarUrl: '/profile-bea.svg', prcNumber: '0001122', verification: 'verified', location: 'Taguig', specialties: ['Residential design', 'Lighting'] }),
-    make({ id: 'u_nico', name: 'Nico Garcia', email: 'nico@demo.ph', role: 'designer', tier: 'rme', avatarUrl: '/profile-nico.svg', prcNumber: '0002233', verification: 'verified', location: 'Cavite', specialties: ['Installation', 'Panel upgrades'] }),
-    make({ id: 'u_liza', name: 'Engr. Liza Ramos', email: 'liza@demo.ph', role: 'pee_reviewer', tier: 'pee', avatarUrl: '/profile-liza.svg', prcNumber: '0003344', verification: 'verified', location: 'Pasay', specialties: ['Commercial review', 'Sign and seal'] }),
-    make({ id: 'u_omar', name: 'Omar Villanueva', email: 'omar@demo.ph', role: 'designer', tier: 'student', avatarUrl: '/profile-omar.svg', verification: 'verified', location: 'Marikina', specialties: ['Load schedules', 'Site documentation'] }),
+    make({ id: 'u_paolo', name: 'Paolo Reyes', email: 'paolo@demo.ph', role: 'designer', tier: 'student', avatarUrl: demoAvatarByUserId.u_paolo, verification: 'verified', location: 'Manila', specialties: ['Residential wiring'] }),
+    make({ id: 'u_ana', name: 'Engr. Ana Villanueva', email: 'ana@demo.ph', role: 'designer', tier: 'ree', avatarUrl: demoAvatarByUserId.u_ana, prcNumber: '0012345', verification: 'verified', location: 'Makati', specialties: ['Commercial', 'Load calculation'] }),
+    make({ id: 'u_ramon', name: 'Ramon Bautista', email: 'ramon@demo.ph', role: 'designer', tier: 'rme', avatarUrl: demoAvatarByUserId.u_ramon, prcNumber: '0004567', verification: 'pending', location: 'Davao City', specialties: ['Installation', 'Maintenance'] }),
+    make({ id: 'u_carlo', name: 'Engr. Carlo Mendoza', email: 'carlo@demo.ph', role: 'pee_reviewer', tier: 'pee', avatarUrl: demoAvatarByUserId.u_carlo, prcNumber: '0000789', verification: 'verified', location: 'Pasig', specialties: ['Plan review', 'Sealing'] }),
+    make({ id: 'u_bea', name: 'Engr. Bea Navarro', email: 'bea@demo.ph', role: 'designer', tier: 'ree', avatarUrl: demoAvatarByUserId.u_bea, prcNumber: '0001122', verification: 'verified', location: 'Taguig', specialties: ['Residential design', 'Lighting'] }),
+    make({ id: 'u_nico', name: 'Nico Garcia', email: 'nico@demo.ph', role: 'designer', tier: 'rme', avatarUrl: demoAvatarByUserId.u_nico, prcNumber: '0002233', verification: 'verified', location: 'Cavite', specialties: ['Installation', 'Panel upgrades'] }),
+    make({ id: 'u_liza', name: 'Engr. Liza Ramos', email: 'liza@demo.ph', role: 'pee_reviewer', tier: 'pee', avatarUrl: demoAvatarByUserId.u_liza, prcNumber: '0003344', verification: 'verified', location: 'Pasay', specialties: ['Commercial review', 'Sign and seal'] }),
+    make({ id: 'u_omar', name: 'Omar Villanueva', email: 'omar@demo.ph', role: 'designer', tier: 'student', avatarUrl: demoAvatarByUserId.u_omar, verification: 'verified', location: 'Marikina', specialties: ['Load schedules', 'Site documentation'] }),
   ];
 }
 
@@ -77,7 +77,7 @@ function readUsers(): StoredUser[] {
   const existing = load<StoredUser[] | null>(USERS_KEY, null);
   if (existing) {
     const repaired = existing.map((user) =>
-      demoAvatarByUserId[user.id] && (!user.avatarUrl || user.avatarUrl.includes('images.unsplash.com'))
+      demoAvatarByUserId[user.id] && (!user.avatarUrl || user.avatarUrl.includes('images.unsplash.com') || user.avatarUrl.includes('/profile-'))
         ? { ...user, avatarUrl: demoAvatarByUserId[user.id] }
         : user,
     );

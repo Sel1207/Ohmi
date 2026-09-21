@@ -63,8 +63,9 @@ export function JobIntake() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
-  const [projectType, setProjectType] = useState<ProjectType>('design_plan');
+  const [projectType] = useState<ProjectType>('design_plan');
   const [projectTypeOther, setProjectTypeOther] = useState('');
+  const [scopeTypes, setScopeTypes] = useState<ProjectType[]>(['design_plan']);
   const [projectStatus, setProjectStatus] = useState<ProjectStage>('new_construction');
   const [buildingType, setBuildingType] = useState<BuildingType>('commercial');
   const [powerType, setPowerType] = useState<PowerType>('not_sure');
@@ -90,8 +91,9 @@ export function JobIntake() {
     try {
       const job = await marketplaceService.createJob(user.id, {
         title,
-        projectType,
+        projectType: scopeTypes[0] ?? projectType,
         projectTypeOther,
+        scopeTypes,
         projectStatus,
         buildingType,
         powerType,
@@ -115,6 +117,10 @@ export function JobIntake() {
     setSupportingFiles(Array.from(event.target.files ?? []).map((file) => file.name));
   };
 
+  const toggleScope = (scope: ProjectType) => {
+    setScopeTypes((current) => current.includes(scope) ? current.filter((item) => item !== scope) : [...current, scope]);
+  };
+
   return (
     <main className="page narrow-page">
       <section className="page-heading">
@@ -126,33 +132,14 @@ export function JobIntake() {
       </section>
 
       <form className="card stack" onSubmit={handleSubmit}>
-        <label className="field">
-          Job title
-          <input value={title} onChange={(event) => setTitle(event.target.value)} required />
-        </label>
-
-        <div className="grid two">
+        <fieldset className="intake-section">
+          <legend>1. Basic project details</legend>
           <label className="field">
-            Project type
-            <select value={projectType} onChange={(event) => setProjectType(event.target.value as ProjectType)}>
-              {Object.entries(PROJECT_TYPE_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
+            Job title
+            <input value={title} onChange={(event) => setTitle(event.target.value)} required />
           </label>
-          {projectType === 'other' ? (
-            <label className="field">
-              Specify project type
-              <input
-                value={projectTypeOther}
-                onChange={(event) => setProjectTypeOther(event.target.value)}
-                placeholder="e.g. Energy audit"
-                required
-              />
-            </label>
-          ) : null}
+
+          <div className="grid two">
           <label className="field">
             Project status
             <select value={projectStatus} onChange={(event) => setProjectStatus(event.target.value as ProjectStage)}>
@@ -169,22 +156,53 @@ export function JobIntake() {
               ))}
             </select>
           </label>
-        </div>
+          </div>
+          <div className="grid two">
+            <IntakeField id="floorAreaSqm" measurement={intake.floorAreaSqm} onChange={(next) => updateMeasurement('floorAreaSqm', next)} />
+            <IntakeField id="storeys" measurement={intake.storeys} onChange={(next) => updateMeasurement('storeys', next)} />
+          </div>
+        </fieldset>
 
-        <label className="field">
-          Project location
-          <input value={location} onChange={(event) => setLocation(event.target.value)} required />
-        </label>
+        <fieldset className="intake-section">
+          <legend>2. Electrical specifics</legend>
+          <div className="intake-grid">
+            <IntakeField id="kvaRating" measurement={intake.kvaRating} onChange={(next) => updateMeasurement('kvaRating', next)} />
+            <IntakeField id="breakerCount" measurement={intake.breakerCount} onChange={(next) => updateMeasurement('breakerCount', next)} />
+          </div>
+          <label className="field">
+            Power type
+            <select value={powerType} onChange={(event) => setPowerType(event.target.value as PowerType)}>
+              {Object.entries(POWER_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+            <span className="help-text">Choose “Not sure” if you need an engineer to confirm it.</span>
+          </label>
+        </fieldset>
 
-        <label className="field">
-          Power type
-          <select value={powerType} onChange={(event) => setPowerType(event.target.value as PowerType)}>
-            {Object.entries(POWER_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-          </select>
-          <span className="help-text">Choose “Not sure” if you need an engineer to confirm it.</span>
-        </label>
+        <fieldset className="intake-section">
+          <legend>3. Scope of work</legend>
+          <div className="scope-options">
+            {(['design_plan', 'load_calculation', 'sign_seal', 'installation', 'other'] as ProjectType[]).map((scope) => (
+              <label className="check-row" key={scope}>
+                <input type="checkbox" checked={scopeTypes.includes(scope)} onChange={() => toggleScope(scope)} />
+                {PROJECT_TYPE_LABELS[scope]}
+              </label>
+            ))}
+          </div>
+          {scopeTypes.includes('other') ? (
+            <label className="field">
+              Specify other scope
+              <input value={projectTypeOther} onChange={(event) => setProjectTypeOther(event.target.value)} placeholder="e.g. Energy audit" required />
+            </label>
+          ) : null}
+          <span className="help-text">Select every part of the work you need. Engineers use these selections to respond with the right scope.</span>
+        </fieldset>
 
-        <div className="grid two">
+        <fieldset className="intake-section">
+          <legend>4. Logistics</legend>
+          <label className="field">
+            Project location (city/province)
+            <input value={location} onChange={(event) => setLocation(event.target.value)} required />
+          </label>
           <label className="field">
             Minimum budget
             <input type="number" min="0" value={budgetMin} onChange={(event) => setBudgetMin(event.target.value)} />
@@ -193,38 +211,21 @@ export function JobIntake() {
             Maximum budget
             <input type="number" min="0" value={budgetMax} onChange={(event) => setBudgetMax(event.target.value)} />
           </label>
-        </div>
-
-        <div className="intake-grid">
-          {Object.keys(initialIntake).map((key) => {
-            const typedKey = key as MeasurementKey;
-            return (
-              <IntakeField
-                key={typedKey}
-                id={typedKey}
-                measurement={intake[typedKey]}
-                onChange={(next) => updateMeasurement(typedKey, next)}
-              />
-            );
-          })}
-        </div>
-
-        <label className="field">
-          Scope notes
-          <textarea value={scope} onChange={(event) => setScope(event.target.value)} rows={5} required />
-        </label>
-
-        <label className="field">
-          Target timeline
-          <input value={targetTimeline} onChange={(event) => setTargetTimeline(event.target.value)} placeholder="e.g. Within 3 weeks" required />
-        </label>
-
-        <label className="field">
-          Supporting files
-          <input type="file" multiple accept="image/*,.pdf" onChange={handleFiles} />
-          <span className="help-text">Floor plans, existing bills, and photos. Files are recorded by name in this prototype.</span>
-          {supportingFiles.length > 0 ? <span className="help-text">Selected: {supportingFiles.join(', ')}</span> : null}
-        </label>
+          <label className="field">
+            Target timeline
+            <input value={targetTimeline} onChange={(event) => setTargetTimeline(event.target.value)} placeholder="e.g. Within 3 weeks" required />
+          </label>
+          <label className="field">
+            Supporting files
+            <input type="file" multiple accept="image/*,.pdf" onChange={handleFiles} />
+            <span className="help-text">Floor plans, existing bills, and photos.</span>
+            {supportingFiles.length > 0 ? <span className="help-text">Selected: {supportingFiles.join(', ')}</span> : null}
+          </label>
+          <label className="field">
+            Scope notes
+            <textarea value={scope} onChange={(event) => setScope(event.target.value)} rows={5} required />
+          </label>
+        </fieldset>
 
         {error ? <div className="alert error">{error}</div> : null}
         <button className="btn btn-primary" type="submit" disabled={saving}>

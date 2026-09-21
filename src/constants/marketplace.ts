@@ -11,7 +11,7 @@ export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   design_plan: 'Electrical design and plans',
   load_calculation: 'Load calculation',
   sign_seal: 'PEE sign and seal',
-  installation: 'Installation support',
+  installation: 'Installation / execution',
   maintenance: 'Maintenance or troubleshooting',
   other: 'Other',
 };

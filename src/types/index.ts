@@ -72,6 +72,7 @@ export interface Job {
   title: string;
   projectType: ProjectType;
   projectTypeOther?: string;
+  scopeTypes?: ProjectType[];
   projectStatus?: ProjectStage;
   buildingType: BuildingType;
   powerType?: PowerType;
