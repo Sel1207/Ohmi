@@ -47,10 +47,10 @@ export function Home() {
     <main className="page">
       <section className="hero">
         <div className="hero-copy">
-          <h1>Professional electrical design coordination, without the messy chats.</h1>
+          <h1>Electrical projects, coordinated with clarity.</h1>
           <p className="lead">
-            Ohmi connects clients, licensed engineers, and field teams in one place, so electrical jobs are scoped,
-            priced, and delivered with less guesswork.
+            Connect with verified EE professionals, turn technical needs into clear project scopes, and keep every
+            proposal, update, and handoff in one organized workspace.
           </p>
           <div className="action-row">
             <Link className="btn btn-primary btn-lg" to={audience.primary.to}>
