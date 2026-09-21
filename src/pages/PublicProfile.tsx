@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
 import { TierBadge } from '../components/TierBadge';
 import { BUILDING_TYPE_LABELS, projectTypeLabel } from '../constants/marketplace';
@@ -11,6 +11,7 @@ import { formatDate, formatPeso } from '../utils/format';
 
 export function PublicProfile() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [member, setMember] = useState<User | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +43,10 @@ export function PublicProfile() {
         </div>
         {member.tier ? <TierBadge tier={member.tier} status={member.verification} /> : null}
       </section>
+
+      <button className="btn btn-secondary profile-back-button" type="button" onClick={() => navigate(-1)}>
+        Back
+      </button>
 
       <section className="card stack">
         <div className="section-title">

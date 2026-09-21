@@ -318,6 +318,11 @@ small {
   padding-bottom: 4px;
 }
 
+.profile-back-button {
+  width: fit-content;
+  margin-bottom: 20px;
+}
+
 .profile-heading-badges {
   display: flex;
   flex-wrap: wrap;
@@ -1060,6 +1065,44 @@ textarea {
   padding: 16px;
 }
 
+.proposal-designer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.proposal-designer-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.proposal-designer-link:hover strong {
+  color: var(--brand);
+}
+
+.proposal-profile-button {
+  width: fit-content;
+  margin-bottom: 12px;
+}
+
+.proposal-designer > div {
+  display: grid;
+  gap: 5px;
+}
+
+.proposal-designer-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.proposal-designer-meta small {
+  color: var(--muted);
+  text-transform: capitalize;
+}
+
 .list-card {
   gap: 4px;
 }
@@ -1257,8 +1300,18 @@ a.list-card:hover {
 }
 
 .guest-proposal-state .btn {
-  width: max-content;
-  max-width: 100%;
+  display: inline-flex;
+  align-self: start;
+  justify-self: start;
+  flex: 0 0 auto;
+  width: fit-content !important;
+  min-width: 120px;
+  max-width: none;
+  min-height: 42px;
+  padding-inline: 18px;
+  white-space: nowrap;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
 }
 
 /* ---------- Badges, pills, alerts ---------- */

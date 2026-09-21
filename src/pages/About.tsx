@@ -90,6 +90,7 @@ export function About() {
   return (
     <main className="page prose-page wide">
       <header className="content-header">
+        <p className="eyebrow">Philippines #1 Trusted EE Design &amp; Coordination Platform</p>
         <h1>About Ohmi</h1>
         <p className="lead">
           Electrical work is technical, and hiring for it should not be guesswork. Ohmi gives clients a clear way to

@@ -108,6 +108,18 @@ const seededAvatarByUserId: Record<string, string> = {
 function seededProfiles(): DesignerProfile[] {
   return [
     {
+      userId: 'u_maria',
+      headline: 'REE for residential electrical layouts and load schedules',
+      bio: 'Verified Registered Electrical Engineer focused on coordinated CAD plans, practical load calculations, and clear client handoffs.',
+      education: 'Bachelor of Science in Electrical Engineering, Mapua University',
+      address: 'Quezon City',
+      specialties: ['Residential design', 'Load calculation', 'CAD layouts'],
+      location: 'Quezon City',
+      projectsUndertaken: 8,
+      proposalsSent: 10,
+      portfolio: [],
+    },
+    {
       userId: 'u_paolo',
       headline: 'Residential wiring assistant for small renovations',
       bio: 'Student practitioner building a careful portfolio on compact home improvement jobs under proper supervision.',
@@ -319,6 +331,16 @@ function seededProposals(): Proposal[] {
       message: 'I can prepare load calculations, panel schedule, and permit-ready plan sheets for PEE review.',
       status: 'pending',
       createdAt: seededAt,
+    },
+    {
+      id: 'prop_carlo_cafe',
+      jobId: 'job_cafe_qc',
+      designerId: 'u_carlo',
+      price: 52500,
+      timelineDays: 16,
+      message: 'I can review the cafe electrical plans, prepare the load schedule and single-line diagram, and coordinate the package for sign-and-seal readiness.',
+      status: 'pending',
+      createdAt: '2026-09-21T05:10:00.000Z',
     },
     {
       id: 'prop_maria_collaboration',
@@ -870,6 +892,7 @@ export const localMarketplaceService: MarketplaceService = {
     validateProposalInput(input);
     const job = await this.getJob(jobId);
     if (job.status !== 'open') throw new Error('This job is no longer open for proposals.');
+    if (job.clientId === designerId) throw new Error('You cannot submit a proposal to your own job.');
 
     const users = await usersById();
     const designer = users.get(designerId);

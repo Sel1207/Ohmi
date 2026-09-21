@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { projectTypeLabel } from '../constants/marketplace';
 import { TierBadge } from '../components/TierBadge';
 import { Avatar } from '../components/Avatar';
@@ -18,6 +18,7 @@ export function DesignerProfile() {
   const [following, setFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!id) return;
@@ -108,6 +109,10 @@ export function DesignerProfile() {
           ) : null}
         </div>
       </section>
+
+      <button className="btn btn-secondary profile-back-button" type="button" onClick={() => navigate(-1)}>
+        Back
+      </button>
 
       <div className="grid two uneven">
         <section className="card stack">

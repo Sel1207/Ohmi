@@ -179,6 +179,8 @@ export function JobDetail() {
                 Sign in
               </Link>
             </div>
+          ) : isOwner ? (
+            <p className="muted">This is your job. You cannot submit a proposal to your own posting.</p>
           ) : !isProposalRole ? (
             <p className="muted">Proposal submissions are available to designer and PEE reviewer accounts. Client accounts can post jobs and review incoming proposals.</p>
           ) : job.status !== 'open' ? (
@@ -250,11 +252,14 @@ export function JobDetail() {
                 <p>{proposal.message}</p>
                 <div className="split-row">
                   <span className={`status-pill ${proposal.status}`}>{proposal.status}</span>
-                  {isOwner && job.status === 'open' && proposal.status === 'pending' ? (
-                    <button className="btn btn-primary" type="button" onClick={() => void acceptProposal(proposal.id)}>
-                      Accept and create project
-                    </button>
-                  ) : null}
+                  <div className="action-row">
+                    <Link className="btn btn-secondary" to={`/designers/${proposal.designerId}`}>View Profile</Link>
+                    {isOwner && job.status === 'open' && proposal.status === 'pending' ? (
+                      <button className="btn btn-primary" type="button" onClick={() => void acceptProposal(proposal.id)}>
+                        Accept and create project
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             );

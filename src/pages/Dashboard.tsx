@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { FormEvent } from 'react';
 import { BUILDING_TYPE_LABELS, projectTypeLabel } from '../constants/marketplace';
+import { Avatar } from '../components/Avatar';
+import { TierBadge } from '../components/TierBadge';
 import { authService, marketplaceService } from '../services';
-import type { Job, Message, Project, Proposal } from '../types';
+import type { DesignerProfileView, Job, Message, Project, Proposal } from '../types';
 import { formatDate, formatPeso } from '../utils/format';
 import { errorMessage } from '../utils/errors';
 import { useAuth } from '../hooks/useAuth';
@@ -15,6 +17,7 @@ export function Dashboard() {
   const [jobStatusFilter, setJobStatusFilter] = useState<Job['status'] | 'all'>('all');
   const [projects, setProjects] = useState<Project[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [designerProfiles, setDesignerProfiles] = useState<DesignerProfileView[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [members, setMembers] = useState<Record<string, { name: string }>>({});
   const [editingProposalId, setEditingProposalId] = useState<string | null>(null);
@@ -34,12 +37,13 @@ export function Dashboard() {
       setLoading(true);
       setError(null);
       try {
-        const [jobData, ownProjects, ownProposals, ownMessages, userData] = await Promise.all([
+        const [jobData, ownProjects, ownProposals, ownMessages, userData, profileData] = await Promise.all([
           marketplaceService.listJobs(),
           marketplaceService.listProjectsForUser(currentUser.id),
           marketplaceService.listProposalsForDesigner(currentUser.id),
           marketplaceService.listMessagesForUser(currentUser.id),
           authService.listUsers(),
+          marketplaceService.listDesignerProfiles(),
         ]);
         if (!alive) return;
         setAllJobs(jobData);
@@ -48,6 +52,7 @@ export function Dashboard() {
         setProposals(ownProposals);
         setMessages(ownMessages);
         setMembers(Object.fromEntries(userData.map((member) => [member.id, { name: member.name }])));
+        setDesignerProfiles(profileData);
       } catch (err) {
         if (alive) setError(errorMessage(err));
       } finally {
@@ -235,6 +240,7 @@ export function Dashboard() {
           ) : (
             proposals.map((proposal) => {
               const proposalJob = allJobs.find((job) => job.id === proposal.jobId);
+              const proposalProfile = designerProfiles.find((profile) => profile.userId === proposal.designerId);
               return editingProposalId === proposal.id ? (
                 <form className="proposal-card stack" key={proposal.id} onSubmit={(event) => void saveProposal(event, proposal.id)}>
                   <strong>{proposalJob?.title ?? 'Job proposal'}</strong>
@@ -261,6 +267,19 @@ export function Dashboard() {
                 </form>
               ) : (
                 <article className="proposal-card" key={proposal.id}>
+                  <Link className="proposal-designer proposal-designer-link" to={`/designers/${proposal.designerId}`}>
+                    <Avatar name={proposalProfile?.user.name ?? 'Designer'} src={proposalProfile?.user.avatarUrl} size="md" />
+                    <div>
+                      <strong>{proposalProfile?.user.name ?? 'Designer profile'}</strong>
+                      <div className="proposal-designer-meta">
+                        {proposalProfile?.user.tier ? <TierBadge tier={proposalProfile.user.tier} status={proposalProfile.user.verification} /> : null}
+                        <small>{proposalProfile?.user.verification ?? 'verification pending'}</small>
+                      </div>
+                    </div>
+                  </Link>
+                  <Link className="btn btn-secondary proposal-profile-button" to={`/designers/${proposal.designerId}`}>
+                    View Profile
+                  </Link>
                   <div className="split-row">
                     <div className="stack compact">
                       <Link to={`/jobs/${proposal.jobId}`}><strong>{proposalJob?.title ?? 'Job proposal'}</strong></Link>
