@@ -175,16 +175,16 @@ function seededProfiles(): DesignerProfile[] {
       ],
     },
     {
-      userId: 'u_bea', headline: 'REE for residential layouts and lighting plans', bio: 'Electrical engineer focused on practical residential design and clear client handoffs.', location: 'Taguig', specialties: ['Residential design', 'Lighting'], proposalsSent: 16, portfolio: [],
+      userId: 'u_bea', headline: 'REE for residential layouts and lighting plans', bio: 'Electrical engineer focused on practical residential design and clear client handoffs.', education: 'BS Electrical Engineering, De La Salle University', address: 'Bonifacio Global City, Taguig', location: 'Taguig', specialties: ['Residential design', 'Lighting'], projectsUndertaken: 14, proposalsSent: 16, portfolio: [],
     },
     {
-      userId: 'u_nico', headline: 'RME for safe installations and panel upgrades', bio: 'Field-focused registered master electrician for installation planning and maintenance work.', location: 'Cavite', specialties: ['Installation', 'Panel upgrades'], proposalsSent: 12, portfolio: [],
+      userId: 'u_nico', headline: 'RME for safe installations and panel upgrades', bio: 'Field-focused registered master electrician for installation planning and maintenance work.', education: 'Diploma in Electrical Technology, TUP', address: 'Imus, Cavite', location: 'Cavite', specialties: ['Installation', 'Panel upgrades'], projectsUndertaken: 9, proposalsSent: 12, portfolio: [],
     },
     {
-      userId: 'u_liza', headline: 'PEE for commercial review and sign-and-seal coordination', bio: 'Senior reviewer helping project teams resolve technical comments before submission.', location: 'Pasay', specialties: ['Commercial review', 'Sign and seal'], proposalsSent: 22, portfolio: [],
+      userId: 'u_liza', headline: 'PEE for commercial review and sign-and-seal coordination', bio: 'Senior reviewer helping project teams resolve technical comments before submission.', education: 'BS Electrical Engineering, University of Santo Tomas', address: 'Newport City, Pasay', location: 'Pasay', specialties: ['Commercial review', 'Sign and seal'], projectsUndertaken: 27, proposalsSent: 22, portfolio: [],
     },
     {
-      userId: 'u_omar', headline: 'Student practitioner for load schedules and site documentation', bio: 'Student practitioner building experience through careful documentation and supervised coordination.', location: 'Marikina', specialties: ['Load schedules', 'Site documentation'], proposalsSent: 6, portfolio: [],
+      userId: 'u_omar', headline: 'Student practitioner for load schedules and site documentation', bio: 'Student practitioner building experience through careful documentation and supervised coordination.', education: 'BS Electrical Engineering, National University', address: 'Concepcion Uno, Marikina', location: 'Marikina', specialties: ['Load schedules', 'Site documentation'], projectsUndertaken: 4, proposalsSent: 6, portfolio: [],
     },
   ];
 }
