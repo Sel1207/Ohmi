@@ -1,10 +1,8 @@
-import { useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { TierBadge } from '../components/TierBadge';
 import { TIER_ORDER, TIERS } from '../constants/tiers';
 import { useAuth } from '../hooks/useAuth';
-import { marketplaceService } from '../services';
 import type { TierId } from '../types';
 import { formatPeso } from '../utils/format';
 
@@ -21,51 +19,12 @@ const exampleProposals: { name: string; tier: TierId; price: number; days: numbe
   { name: 'Engr. Carlo Mendoza', tier: 'pee', price: 55000, days: 7 },
 ];
 
-interface LiveStats {
-  profiles: number;
-  verified: number;
-  openJobs: number;
-}
-
-function plural(n: number, noun: string): string {
-  return `${n} ${noun}${n === 1 ? '' : 's'}`;
-}
-
-/** Real counts from the marketplace service, so the page never claims more than exists. */
-function useLiveStats(): LiveStats | null {
-  const [stats, setStats] = useState<LiveStats | null>(null);
-
-  useEffect(() => {
-    let alive = true;
-    Promise.all([marketplaceService.listDesignerProfiles(), marketplaceService.listJobs()])
-      .then(([profiles, jobs]) => {
-        if (!alive) return;
-        setStats({
-          profiles: profiles.length,
-          verified: profiles.filter(
-            (p) => p.user.tier && p.user.tier !== 'student' && p.user.verification === 'verified',
-          ).length,
-          openJobs: jobs.filter((job) => job.status === 'open').length,
-        });
-      })
-      .catch(() => {
-        // The counts are a nice-to-have. If they fail, leave the line out.
-      });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  return stats;
-}
-
 function YesNo({ yes }: { yes: boolean }) {
   return <span className={yes ? 'yn yes' : 'yn no'}>{yes ? 'Yes' : 'No'}</span>;
 }
 
 export function Home() {
   const { user } = useAuth();
-  const stats = useLiveStats();
 
   // Clients (and visitors) come to post work. Designers and admins come to find it.
   const audience =
@@ -100,12 +59,6 @@ export function Home() {
               {audience.secondary.label}
             </Link>
           </div>
-          {stats ? (
-            <p className="muted live-line">
-              Right now: {plural(stats.profiles, 'designer profile')} ({stats.verified} PRC-verified) and{' '}
-              {plural(stats.openJobs, 'open job')}.
-            </p>
-          ) : null}
         </div>
 
         <article className="specimen" aria-label="Example job post with proposals">

@@ -73,6 +73,10 @@ const seededAvatarByUserId: Record<string, string> = {
   u_ana: '/profile-ana.svg',
   u_ramon: '/profile-ramon.svg',
   u_carlo: '/profile-carlo.svg',
+  u_bea: '/profile-bea.svg',
+  u_nico: '/profile-nico.svg',
+  u_liza: '/profile-liza.svg',
+  u_omar: '/profile-omar.svg',
 };
 
 function seededProfiles(): DesignerProfile[] {
