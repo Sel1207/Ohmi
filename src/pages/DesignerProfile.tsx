@@ -152,8 +152,8 @@ export function DesignerProfile() {
           </div>
           <div className="rating-overview">
             <div className="rating-score">
-              <strong>{profile.reviewCount > 0 ? profile.averageRating.toFixed(1) : '—'}</strong>
-              <span className="rating-stars" aria-label={`${profile.averageRating.toFixed(1)} out of 5 stars`}>★★★★★</span>
+              <strong>{profile.reviewCount > 0 ? `${profile.averageRating.toFixed(1)} / 5.0` : '— / 5.0'}</strong>
+              <span className="rating-stars" aria-label={`${profile.averageRating.toFixed(1)} out of 5.0 stars`}>★★★★★</span>
               <small>{profile.reviewCount > 0 ? 'Average rating' : 'No ratings yet'}</small>
             </div>
             <div className="rating-breakdown">

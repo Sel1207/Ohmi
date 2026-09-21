@@ -54,12 +54,13 @@ export interface MarketplaceService {
   listProjectsForUser(userId: string): Promise<Project[]>;
   getProject(projectId: string): Promise<Project>;
   updateProjectProgress(projectId: string, userId: string, progressPercent: number, report: string): Promise<Project>;
+  requestProjectCompletion(projectId: string, designerId: string): Promise<Project>;
+  approveProjectCompletion(projectId: string, clientId: string): Promise<Project>;
   listProgressUpdates(projectId: string, userId: string): Promise<ProgressUpdate[]>;
   listProjectFiles(projectId: string): Promise<ProjectFile[]>;
   uploadProjectFile(projectId: string, userId: string, file: Omit<ProjectFile, 'id' | 'projectId' | 'uploadedBy' | 'createdAt'>): Promise<ProjectFile>;
   getProjectInviteLink(projectId: string): string;
   joinProjectByInvite(projectId: string, token: string, userId: string): Promise<Project>;
-  completeProject(projectId: string, userId: string): Promise<Project>;
   rateDesigner(projectId: string, clientId: string, stars: number, comment: string): Promise<Review>;
   listReviewsForDesigner(designerId: string): Promise<Review[]>;
   followDesigner(designerId: string, followerId: string): Promise<void>;
@@ -223,7 +224,7 @@ function defaultProfileFor(user: User): DesignerProfile {
     userId: user.id,
     headline: `${user.tier ? user.tier.toUpperCase() : 'EE'} practitioner on Ohmi`,
     bio: 'This profile was created from the local signup flow and can be expanded with portfolio details later.',
-    education: 'Education details not provided',
+    education: [user.educationLevel, user.educationInstitution].filter(Boolean).join(', ') || 'Education details not provided',
     address: user.location ?? 'Address not provided',
     specialties: user.specialties.length > 0 ? user.specialties : ['Electrical coordination'],
     location: user.location ?? 'Philippines',
@@ -238,6 +239,7 @@ function additionalSeededJobs(): Job[] {
     kvaRating: { unknown: true },
     floorAreaSqm: { unknown: true },
     breakerCount: { unknown: true },
+    panelCount: { unknown: true },
     storeys: { unknown: true },
   };
   return [
@@ -276,6 +278,7 @@ function seededJobs(): Job[] {
         kvaRating: { value: 45, unknown: false },
         floorAreaSqm: { value: 70, unknown: false },
         breakerCount: { unknown: true },
+        panelCount: { unknown: true },
         storeys: { value: 1, unknown: false },
       },
       status: 'open',
@@ -295,6 +298,7 @@ function seededJobs(): Job[] {
         kvaRating: { unknown: true },
         floorAreaSqm: { value: 65, unknown: false },
         breakerCount: { value: 10, unknown: false },
+        panelCount: { unknown: true },
         storeys: { value: 1, unknown: false },
       },
       status: 'open',
@@ -370,6 +374,14 @@ function seededProjects(): Project[] {
 function seededReviews(): Review[] {
   return [
     {
+      id: 'rev_paolo_1', projectId: 'seed_paolo_1', designerId: 'u_paolo', clientId: 'u_juan', stars: 5,
+      comment: 'Careful site notes and a very clear starter load inventory.', createdAt: '2026-09-18T02:00:00.000Z',
+    },
+    {
+      id: 'rev_paolo_2', projectId: 'seed_paolo_2', designerId: 'u_paolo', clientId: 'u_bea', stars: 4,
+      comment: 'Good communication and thoughtful documentation for a small renovation.', createdAt: '2026-09-17T02:00:00.000Z',
+    },
+    {
       id: 'rev_ana_1',
       projectId: 'seed_completed_1',
       designerId: 'u_ana',
@@ -379,6 +391,18 @@ function seededReviews(): Review[] {
       createdAt: seededAt,
     },
     {
+      id: 'rev_ana_2', projectId: 'seed_ana_2', designerId: 'u_ana', clientId: 'u_bea', stars: 4,
+      comment: 'Well-organized plans and a practical load schedule that was easy to review.', createdAt: '2026-09-19T02:00:00.000Z',
+    },
+    {
+      id: 'rev_ramon_1', projectId: 'seed_ramon_1', designerId: 'u_ramon', clientId: 'u_juan', stars: 5,
+      comment: 'Thorough inspection notes and clear maintenance recommendations.', createdAt: '2026-09-18T05:00:00.000Z',
+    },
+    {
+      id: 'rev_ramon_2', projectId: 'seed_ramon_2', designerId: 'u_ramon', clientId: 'u_maria', stars: 4,
+      comment: 'Responsive and practical throughout the panel troubleshooting work.', createdAt: '2026-09-17T05:00:00.000Z',
+    },
+    {
       id: 'rev_carlo_1',
       projectId: 'seed_completed_2',
       designerId: 'u_carlo',
@@ -386,6 +410,50 @@ function seededReviews(): Review[] {
       stars: 5,
       comment: 'Detailed review comments and practical PEC references.',
       createdAt: seededAt,
+    },
+    {
+      id: 'rev_carlo_2', projectId: 'seed_carlo_2', designerId: 'u_carlo', clientId: 'u_maria', stars: 5,
+      comment: 'Sharp review comments and a strong eye for sign-and-seal readiness.', createdAt: '2026-09-19T05:00:00.000Z',
+    },
+    {
+      id: 'rev_bea_1', projectId: 'seed_bea_1', designerId: 'u_bea', clientId: 'u_juan', stars: 5,
+      comment: 'The lighting plan was clear, efficient, and easy for the contractor to follow.', createdAt: '2026-09-18T07:00:00.000Z',
+    },
+    {
+      id: 'rev_bea_2', projectId: 'seed_bea_2', designerId: 'u_bea', clientId: 'u_maria', stars: 4,
+      comment: 'Strong residential design instincts and clean client handoffs.', createdAt: '2026-09-17T07:00:00.000Z',
+    },
+    {
+      id: 'rev_nico_1', projectId: 'seed_nico_1', designerId: 'u_nico', clientId: 'u_juan', stars: 5,
+      comment: 'Reliable field coordination and useful panel upgrade recommendations.', createdAt: '2026-09-18T08:00:00.000Z',
+    },
+    {
+      id: 'rev_nico_2', projectId: 'seed_nico_2', designerId: 'u_nico', clientId: 'u_bea', stars: 4,
+      comment: 'Good installation planning with practical next steps.', createdAt: '2026-09-16T08:00:00.000Z',
+    },
+    {
+      id: 'rev_liza_1', projectId: 'seed_liza_1', designerId: 'u_liza', clientId: 'u_maria', stars: 5,
+      comment: 'Detailed commercial review and excellent sign-and-seal coordination.', createdAt: '2026-09-18T09:00:00.000Z',
+    },
+    {
+      id: 'rev_liza_2', projectId: 'seed_liza_2', designerId: 'u_liza', clientId: 'u_juan', stars: 5,
+      comment: 'Professional, direct, and very helpful during plan revisions.', createdAt: '2026-09-16T09:00:00.000Z',
+    },
+    {
+      id: 'rev_omar_1', projectId: 'seed_omar_1', designerId: 'u_omar', clientId: 'u_bea', stars: 4,
+      comment: 'Strong documentation habits and careful site measurement notes.', createdAt: '2026-09-18T10:00:00.000Z',
+    },
+    {
+      id: 'rev_omar_2', projectId: 'seed_omar_2', designerId: 'u_omar', clientId: 'u_maria', stars: 5,
+      comment: 'Very attentive to details and easy to coordinate with.', createdAt: '2026-09-16T10:00:00.000Z',
+    },
+    {
+      id: 'rev_maria_1', projectId: 'seed_maria_1', designerId: 'u_maria', clientId: 'u_bea', stars: 5,
+      comment: 'Excellent REE-level coordination and a polished CAD plan package.', createdAt: '2026-09-20T10:00:00.000Z',
+    },
+    {
+      id: 'rev_maria_2', projectId: 'seed_maria_2', designerId: 'u_maria', clientId: 'u_carlo', stars: 5,
+      comment: 'Clear electrical layouts, responsive updates, and strong technical judgment.', createdAt: '2026-09-19T10:00:00.000Z',
     },
   ];
 }
@@ -471,8 +539,11 @@ function readProfiles(): DesignerProfile[] {
   if (existing) {
     const knownIds = new Set(existing.map((profile) => profile.userId));
     const missingProfiles = seededProfiles().filter((profile) => !knownIds.has(profile.userId));
-    const complete = [...existing, ...missingProfiles];
-    if (missingProfiles.length > 0) save(PROFILES_KEY, complete);
+    const migrated = existing.map((profile) => profile.userId === 'u_maria'
+      ? { ...profile, education: 'Bachelor of Science in Electrical Engineering, Mapua University' }
+      : profile);
+    const complete = [...migrated, ...missingProfiles];
+    if (missingProfiles.length > 0 || migrated.some((profile, index) => profile !== existing[index])) save(PROFILES_KEY, complete);
     return complete;
   }
   const seeded = seededProfiles();
@@ -583,7 +654,13 @@ function writeProgressUpdates(updates: ProgressUpdateStore): void {
 
 function readReviews(): Review[] {
   const existing = load<Review[] | null>(REVIEWS_KEY, null);
-  if (existing) return existing;
+  if (existing) {
+    const knownIds = new Set(existing.map((review) => review.id));
+    const missing = seededReviews().filter((review) => !knownIds.has(review.id));
+    const complete = [...existing, ...missing];
+    if (missing.length > 0) save(REVIEWS_KEY, complete);
+    return complete;
+  }
   const seeded = seededReviews();
   save(REVIEWS_KEY, seeded);
   return seeded;
@@ -975,14 +1052,24 @@ export const localMarketplaceService: MarketplaceService = {
     return updated;
   },
 
-  async completeProject(projectId, userId) {
+  async requestProjectCompletion(projectId, designerId) {
     const projects = readProjects();
     const project = projects.find((item) => item.id === projectId);
     if (!project) throw new Error('Project not found.');
-    if (project.clientId !== userId && project.designerId !== userId) {
-      throw new Error('Only project members can mark this Phase 2 project complete.');
-    }
-    const updated = { ...project, status: 'completed' as const };
+    if (project.designerId !== designerId) throw new Error('Only the assigned designer can request completion.');
+    if (project.status === 'completed') throw new Error('This project is already completed.');
+    const updated = { ...project, completionRequested: true };
+    writeProjects(projects.map((item) => (item.id === projectId ? updated : item)));
+    return updated;
+  },
+
+  async approveProjectCompletion(projectId, clientId) {
+    const projects = readProjects();
+    const project = projects.find((item) => item.id === projectId);
+    if (!project) throw new Error('Project not found.');
+    if (project.clientId !== clientId) throw new Error('Only the client can approve completion.');
+    if (!project.completionRequested) throw new Error('The designer has not requested completion yet.');
+    const updated = { ...project, status: 'completed' as const, completionRequested: false, progressPercent: 100 };
     writeProjects(projects.map((item) => (item.id === projectId ? updated : item)));
     return updated;
   },

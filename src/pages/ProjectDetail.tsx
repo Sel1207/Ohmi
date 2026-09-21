@@ -76,11 +76,22 @@ export function ProjectDetail() {
     void Promise.resolve().then(loadData);
   }, [loadData]);
 
-  const completeProject = async () => {
+  const requestCompletion = async () => {
     if (!project || !user) return;
     setActionError(null);
     try {
-      await marketplaceService.completeProject(project.id, user.id);
+      await marketplaceService.requestProjectCompletion(project.id, user.id);
+      await loadData();
+    } catch (err) {
+      setActionError(errorMessage(err));
+    }
+  };
+
+  const approveCompletion = async () => {
+    if (!project || !user) return;
+    setActionError(null);
+    try {
+      await marketplaceService.approveProjectCompletion(project.id, user.id);
       await loadData();
     } catch (err) {
       setActionError(errorMessage(err));
@@ -204,50 +215,13 @@ export function ProjectDetail() {
   const canRate = user?.id === project.clientId && project.status === 'completed' && !existingReview;
   const isMember = Boolean(user && (user.id === project.clientId || user.id === project.designerId || project.collaboratorIds?.includes(user.id)));
   const canEditProgress = user?.id === project.designerId;
+  const canRequestCompletion = canEditProgress && project.status !== 'completed' && !project.completionRequested;
+  const canApproveCompletion = user?.id === project.clientId && project.completionRequested && project.status !== 'completed';
 
   return (
     <main className="page">
       <section className="page-heading">
         <div>
-
-        <section className="card stack project-progress-editor">
-          <div className="section-title">
-            <div>
-              <h2>Project progress</h2>
-              <small className="muted">Keep everyone aligned on the current handoff.</small>
-            </div>
-            <strong>{project.progressPercent ?? 0}%</strong>
-          </div>
-          <div className="project-progress-track project-progress-track-large">
-            <span style={{ width: `${progressDraft}%` }} />
-          </div>
-          {canEditProgress ? (
-            <div className="project-progress-controls">
-              <input type="range" min="0" max="100" step="1" value={progressDraft} onChange={(event) => setProgressDraft(Number(event.target.value))} aria-label="Project progress percentage" />
-              <input value={progressReport} onChange={(event) => setProgressReport(event.target.value)} placeholder="What was done in this progress?" aria-label="Progress report" />
-              <button className="btn btn-secondary" type="button" onClick={() => void saveProgress()} disabled={savingProgress || progressDraft === (project.progressPercent ?? 0) || !progressReport.trim()}>
-                {savingProgress ? 'Saving...' : 'Save progress'}
-              </button>
-            </div>
-          ) : <small className="muted">Only the assigned designer can update progress.</small>}
-          {progressUpdates.length > 0 ? (
-            <div className="progress-history">
-              <strong>Recent progress reports</strong>
-              {progressUpdates.slice(0, 3).map((update) => <div className="progress-report" key={update.id}><span>{update.progressPercent}%</span><p>{update.report}</p><small>{formatDate(update.createdAt)}</small></div>)}
-            </div>
-          ) : null}
-        </section>
-
-        {progressPopup ? (
-          <div className="progress-popup-backdrop" role="presentation">
-            <section className="progress-popup" role="dialog" aria-modal="true" aria-labelledby="progress-popup-title">
-              <span className="eyebrow">Progress updated</span>
-              <h2 id="progress-popup-title">{progressPopup.progressPercent}% complete</h2>
-              <p>{progressPopup.report}</p>
-              <button className="btn btn-primary" type="button" onClick={() => setProgressPopup(null)}>Close report</button>
-            </section>
-          </div>
-        ) : null}
           <p className="eyebrow">Project handoff</p>
           <h1>{project.title}</h1>
           <p className="muted">
@@ -256,6 +230,45 @@ export function ProjectDetail() {
         </div>
         <span className={`status-pill ${project.status}`}>{project.status}</span>
       </section>
+
+      <section className="card stack project-progress-editor">
+        <div className="section-title">
+          <div>
+            <h2>Project progress</h2>
+            <small className="muted">Keep everyone aligned on the current handoff.</small>
+          </div>
+          <strong>{project.progressPercent ?? 0}%</strong>
+        </div>
+        <div className="project-progress-track project-progress-track-large">
+          <span style={{ width: `${progressDraft}%` }} />
+        </div>
+        {canEditProgress ? (
+          <div className="project-progress-controls">
+            <input type="range" min="0" max="100" step="1" value={progressDraft} onChange={(event) => setProgressDraft(Number(event.target.value))} aria-label="Project progress percentage" />
+            <input value={progressReport} onChange={(event) => setProgressReport(event.target.value)} placeholder="What was done in this progress?" aria-label="Progress report" />
+            <button className="btn btn-secondary" type="button" onClick={() => void saveProgress()} disabled={savingProgress || progressDraft === (project.progressPercent ?? 0) || !progressReport.trim()}>
+              {savingProgress ? 'Saving...' : 'Save progress'}
+            </button>
+          </div>
+        ) : <small className="muted">Only the assigned designer can update progress.</small>}
+        {progressUpdates.length > 0 ? (
+          <div className="progress-history">
+            <strong>Recent progress reports</strong>
+            {progressUpdates.slice(0, 3).map((update) => <div className="progress-report" key={update.id}><span>{update.progressPercent}%</span><p>{update.report}</p><small>{formatDate(update.createdAt)}</small></div>)}
+          </div>
+        ) : null}
+      </section>
+
+      {progressPopup ? (
+        <div className="progress-popup-backdrop" role="presentation">
+          <section className="progress-popup" role="dialog" aria-modal="true" aria-labelledby="progress-popup-title">
+            <span className="eyebrow">Progress updated</span>
+            <h2 id="progress-popup-title">{progressPopup.progressPercent}% complete</h2>
+            <p>{progressPopup.report}</p>
+            <button className="btn btn-primary" type="button" onClick={() => setProgressPopup(null)}>Close report</button>
+          </section>
+        </div>
+      ) : null}
 
       {actionError ? <div className="alert error">{actionError}</div> : null}
 
@@ -280,14 +293,36 @@ export function ProjectDetail() {
 
           <section className="card stack">
           <div className="section-title">
-            <h2>Designer</h2>
-            {designer.user.tier ? <TierBadge tier={designer.user.tier} status={designer.user.verification} /> : null}
+              <h2>Job posted by</h2>
+              <span className="status-pill verified">client</span>
           </div>
-          <strong>{designer.user.name}</strong>
-          <p>{designer.headline}</p>
-          <Link className="btn btn-secondary" to={`/designers/${designer.userId}`}>
-            View profile
-          </Link>
+            <div className="project-person">
+              <Avatar name={members[project.clientId]?.name ?? 'Client'} src={members[project.clientId]?.avatarUrl} size="md" />
+              <div>
+                <strong>{members[project.clientId]?.name ?? 'Client profile'}</strong>
+                <span className="muted">This client posted the original job</span>
+              </div>
+            </div>
+            <Link className="btn btn-secondary" to={`/profiles/${project.clientId}`}>
+              View client profile
+            </Link>
+          </section>
+
+          <section className="card stack">
+            <div className="section-title">
+              <h2>Assigned designer</h2>
+              {designer.user.tier ? <TierBadge tier={designer.user.tier} status={designer.user.verification} /> : null}
+            </div>
+            <div className="project-person">
+              <Avatar name={designer.user.name} src={designer.user.avatarUrl} size="md" />
+              <div>
+                <strong>{designer.user.name}</strong>
+                <span className="muted">{designer.headline}</span>
+              </div>
+            </div>
+            <Link className="btn btn-secondary" to={`/designers/${designer.userId}`}>
+              View designer profile
+            </Link>
           </section>
         </div>
 
@@ -381,10 +416,9 @@ export function ProjectDetail() {
         </div>
         {project.status !== 'completed' ? (
           <>
-            <p className="muted">Mark this marketplace handoff complete when the Phase 2 scope is done.</p>
-            <button className="btn btn-primary" type="button" onClick={() => void completeProject()}>
-              Mark complete
-            </button>
+            {project.completionRequested ? <p className="alert">Completion requested. Waiting for the client to approve the handoff.</p> : <p className="muted">The assigned designer requests completion when the Phase 2 scope is done. The client approves the handoff.</p>}
+            {canRequestCompletion ? <button className="btn btn-primary" type="button" onClick={() => void requestCompletion()}>Request completion</button> : null}
+            {canApproveCompletion ? <button className="btn btn-primary" type="button" onClick={() => void approveCompletion()}>Approve completion</button> : null}
           </>
         ) : existingReview ? (
           <div className="list-card">

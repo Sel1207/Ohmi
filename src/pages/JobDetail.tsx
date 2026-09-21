@@ -11,6 +11,7 @@ import { errorMessage } from '../utils/errors';
 import { useAuth } from '../hooks/useAuth';
 
 function measurementText(item: JobIntake[keyof JobIntake]): string {
+  if (item.notApplicable) return 'N/A';
   if (item.unknown) return 'I do not know yet';
   return typeof item.value === 'number' ? String(item.value) : 'Not provided';
 }
@@ -128,15 +129,15 @@ export function JobDetail() {
           <Link className="job-poster-profile" to={`/profiles/${poster.id}`}>
             <Avatar name={poster.name} src={poster.avatarUrl} size="sm" />
             <span>
+              <small className="poster-label">Posted by</small>
               <strong>{poster.name}</strong>
-              <small>
-                Posted by {poster.role === 'client' ? 'client' : poster.tier ? `${poster.tier.toUpperCase()} practitioner` : 'Ohmi member'} - View profile
-              </small>
+              <small>{poster.role === 'client' ? 'Client account' : poster.tier ? `${poster.tier.toUpperCase()} practitioner` : 'Ohmi member'} · {poster.verification}</small>
             </span>
           </Link>
-          <Link className="btn btn-secondary" to={`/messages/new?to=${poster.id}`}>
-            Message poster
-          </Link>
+          <div className="job-poster-actions">
+            <Link className="btn btn-secondary" to={`/profiles/${poster.id}`}>View profile</Link>
+            {user?.id !== poster.id ? <Link className="btn btn-primary" to={`/messages/new?to=${poster.id}`}>Message poster</Link> : <span className="muted">This is your posting</span>}
+          </div>
         </div>
       ) : null}
 

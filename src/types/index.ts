@@ -57,12 +57,14 @@ export interface DesignerProfileView extends DesignerProfile {
 export interface IntakeMeasurement {
   value?: number;
   unknown: boolean;
+  notApplicable?: boolean;
 }
 
 export interface JobIntake {
   kvaRating: IntakeMeasurement;
   floorAreaSqm: IntakeMeasurement;
   breakerCount: IntakeMeasurement;
+  panelCount: IntakeMeasurement;
   storeys: IntakeMeasurement;
 }
 
@@ -115,6 +117,7 @@ export interface Project {
   status: ProjectStatus;
   collaboratorIds?: string[];
   progressPercent?: number;
+  completionRequested?: boolean;
   createdAt: string;
 }
 

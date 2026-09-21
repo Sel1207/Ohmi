@@ -20,6 +20,7 @@ const initialIntake: JobIntakeData = {
   kvaRating: { unknown: true },
   floorAreaSqm: { unknown: true },
   breakerCount: { unknown: true },
+  panelCount: { unknown: true },
   storeys: { unknown: true },
 };
 
@@ -40,7 +41,7 @@ function IntakeField({
         type="number"
         min="0"
         value={measurement.value ?? ''}
-        disabled={measurement.unknown}
+        disabled={measurement.unknown || measurement.notApplicable}
         onChange={(event) =>
           onChange({ unknown: false, value: event.target.value ? Number(event.target.value) : undefined })
         }
@@ -50,9 +51,18 @@ function IntakeField({
         <input
           type="checkbox"
           checked={measurement.unknown}
-          onChange={(event) => onChange({ unknown: event.target.checked, value: event.target.checked ? undefined : 0 })}
+          disabled={measurement.notApplicable}
+          onChange={(event) => onChange({ unknown: event.target.checked, notApplicable: false, value: event.target.checked ? undefined : 0 })}
         />
         I do not know yet
+      </span>
+      <span className="check-row">
+        <input
+          type="checkbox"
+          checked={measurement.notApplicable ?? false}
+          onChange={(event) => onChange({ unknown: false, notApplicable: event.target.checked, value: event.target.checked ? undefined : 0 })}
+        />
+        N/A for this project
       </span>
       {measurement.unknown ? <span className="help-text">{UNKNOWN_GUIDANCE}</span> : null}
     </label>
@@ -168,6 +178,7 @@ export function JobIntake() {
           <div className="intake-grid">
             <IntakeField id="kvaRating" measurement={intake.kvaRating} onChange={(next) => updateMeasurement('kvaRating', next)} />
             <IntakeField id="breakerCount" measurement={intake.breakerCount} onChange={(next) => updateMeasurement('breakerCount', next)} />
+            <IntakeField id="panelCount" measurement={intake.panelCount} onChange={(next) => updateMeasurement('panelCount', next)} />
           </div>
           <label className="field">
             Power type

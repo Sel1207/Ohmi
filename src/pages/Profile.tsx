@@ -74,7 +74,7 @@ export function Profile() {
         <section className="card stack">
           <div className="section-title">
             <h2>{profile ? 'Ratings' : 'Account activity'}</h2>
-            <strong>{profile && profile.reviewCount > 0 ? `${profile.averageRating.toFixed(1)} / 5` : `${projects.length} active`}</strong>
+            <strong>{profile && profile.reviewCount > 0 ? `${profile.averageRating.toFixed(1)} / 5.0` : `${projects.length} active`}</strong>
           </div>
           {profile ? (
             reviews.length === 0 ? <div className="empty-state">No reviews yet.</div> : reviews.map((review) => (

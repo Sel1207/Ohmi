@@ -62,7 +62,7 @@ function seedUsers(): StoredUser[] {
   // PRC numbers below are FAKE demo values.
   return [
     make({ id: 'u_admin', name: 'Ohmi Admin', email: 'admin@ohmi.ph', role: 'admin', verification: 'verified', specialties: [] }),
-    make({ id: 'u_maria', name: 'Maria Santos', email: 'maria@demo.ph', role: 'designer', tier: 'ree', prcNumber: '0098765', verification: 'verified', educationLevel: "Bachelor's degree", educationInstitution: 'University of the Philippines Diliman', location: 'Quezon City', specialties: ['Load calculation', 'Residential design'] }),
+    make({ id: 'u_maria', name: 'Maria Santos', email: 'maria@demo.ph', role: 'designer', tier: 'ree', prcNumber: '0098765', verification: 'verified', educationLevel: 'Bachelor of Science in Electrical Engineering', educationInstitution: 'Mapua University', location: 'Quezon City', specialties: ['Load calculation', 'Residential design'] }),
     make({ id: 'u_juan', name: 'Juan dela Cruz', email: 'juan@demo.ph', role: 'client', verification: 'verified', location: 'Cebu City', specialties: [] }),
     make({ id: 'u_paolo', name: 'Paolo Reyes', email: 'paolo@demo.ph', role: 'designer', tier: 'student', avatarUrl: demoAvatarByUserId.u_paolo, verification: 'verified', location: 'Manila', specialties: ['Residential wiring'] }),
     make({ id: 'u_ana', name: 'Engr. Ana Villanueva', email: 'ana@demo.ph', role: 'designer', tier: 'ree', avatarUrl: demoAvatarByUserId.u_ana, prcNumber: '0012345', verification: 'verified', location: 'Makati', specialties: ['Commercial', 'Load calculation'] }),
@@ -86,8 +86,8 @@ function readUsers(): StoredUser[] {
             tier: 'ree' as const,
             prcNumber: user.prcNumber ?? '0098765',
             verification: 'verified' as const,
-            educationLevel: user.educationLevel ?? "Bachelor's degree",
-            educationInstitution: user.educationInstitution ?? 'University of the Philippines Diliman',
+            educationLevel: 'Bachelor of Science in Electrical Engineering',
+            educationInstitution: 'Mapua University',
             specialties: user.specialties.length > 0 ? user.specialties : ['Load calculation', 'Residential design'],
           }
         : user;

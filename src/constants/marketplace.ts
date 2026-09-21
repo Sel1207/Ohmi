@@ -47,6 +47,10 @@ export const INTAKE_HELP = {
     label: 'Number of breakers',
     help: 'Breakers are the on/off safety switches inside the panel. If unsure, take a clear photo of the existing panel schedule or breaker box.',
   },
+  panelCount: {
+    label: 'Number of panels',
+    help: 'Include the main panel and any subpanels that the design should cover.',
+  },
   storeys: {
     label: 'Number of storeys',
     help: 'Storeys means how many floors the design needs to serve. This affects risers, panel locations, and cable routes.',
