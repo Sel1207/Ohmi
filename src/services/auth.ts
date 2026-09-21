@@ -39,6 +39,13 @@ type StoredUser = User & { password: string };
 const USERS_KEY = 'users';
 const SESSION_KEY = 'session';
 
+const demoAvatarByUserId: Record<string, string> = {
+  u_paolo: '/profile-paolo.svg',
+  u_ana: '/profile-ana.svg',
+  u_ramon: '/profile-ramon.svg',
+  u_carlo: '/profile-carlo.svg',
+};
+
 function seedUsers(): StoredUser[] {
   const createdAt = new Date().toISOString();
   const make = (u: Omit<StoredUser, 'password' | 'createdAt'>): StoredUser => ({
@@ -65,10 +72,13 @@ function seedUsers(): StoredUser[] {
 function readUsers(): StoredUser[] {
   const existing = load<StoredUser[] | null>(USERS_KEY, null);
   if (existing) {
-    const knownIds = new Set(existing.map((user) => user.id));
+    const repaired = existing.map((user) =>
+      demoAvatarByUserId[user.id] && !user.avatarUrl ? { ...user, avatarUrl: demoAvatarByUserId[user.id] } : user,
+    );
+    const knownIds = new Set(repaired.map((user) => user.id));
     const missingDemoUsers = seedUsers().filter((user) => !knownIds.has(user.id));
-    const complete = [...existing, ...missingDemoUsers];
-    if (missingDemoUsers.length > 0) save(USERS_KEY, complete);
+    const complete = [...repaired, ...missingDemoUsers];
+    if (missingDemoUsers.length > 0 || repaired.some((user, index) => user !== existing[index])) save(USERS_KEY, complete);
     return complete;
   }
   const seeded = seedUsers();
