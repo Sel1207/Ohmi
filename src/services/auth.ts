@@ -42,6 +42,7 @@ const USERS_KEY = 'users';
 const SESSION_KEY = 'session';
 
 const demoAvatarByUserId: Record<string, string> = {
+  u_maria: '/Profiles/Maria%20Santos.png',
   u_paolo: '/Profiles/Paolo%20Reyes.png',
   u_ana: '/Profiles/Engr.%20Ana%20Villanueva.png',
   u_ramon: '/Profiles/Ramon%20Bautista.png',
