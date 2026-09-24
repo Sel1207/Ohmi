@@ -5,7 +5,8 @@ import { BUILDING_TYPE_LABELS, projectTypeLabel } from '../constants/marketplace
 import { TIER_ORDER } from '../constants/tiers';
 import { TierBadge } from '../components/TierBadge';
 import { Avatar } from '../components/Avatar';
-import { authService, marketplaceService } from '../services';
+import { VerificationBadge } from '../components/VerificationBadge';
+import { authService, marketplaceService, trustSafetyService } from '../services';
 import type { BuildingType, DesignerProfileView, Job, MarketplaceFilters, TierId } from '../types';
 import { formatDate, formatPeso } from '../utils/format';
 import { errorMessage } from '../utils/errors';
@@ -23,6 +24,7 @@ export function Marketplace() {
   const [maxBudget, setMaxBudget] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [marketplaceView, setMarketplaceView] = useState<'combined' | 'jobs' | 'designers'>('combined');
   const [currentPage, setCurrentPage] = useState(1);
   const [designerPage, setDesignerPage] = useState(1);
   const [designers, setDesigners] = useState<DesignerProfileView[]>([]);
@@ -55,8 +57,10 @@ export function Marketplace() {
           authService.listUsers(),
         ]);
         if (!alive) return;
-        setDesigners(profileData);
-        setJobs(user ? jobData.filter((job) => job.clientId !== user.id) : jobData);
+        const visibleDesigners = user ? profileData.filter((profile) => !trustSafetyService.isBlocked(user.id, profile.user.id)) : profileData;
+        const visibleJobs = user ? jobData.filter((job) => job.clientId !== user.id && !trustSafetyService.isBlocked(user.id, job.clientId)) : jobData;
+        setDesigners(visibleDesigners);
+        setJobs(visibleJobs);
         setMembers(Object.fromEntries(userData.map((member) => [member.id, member])));
         setCurrentPage(1);
         setDesignerPage(1);
@@ -176,10 +180,16 @@ export function Marketplace() {
       {loading ? <div className="card">Loading marketplace...</div> : null}
 
       {!loading && !error ? (
-        <div className="marketplace-grid">
+        <div className={`marketplace-grid ${marketplaceView === 'combined' ? '' : 'single-view'}`}>
+          {marketplaceView !== 'jobs' ? (
           <section className="stack">
             <div className="section-title">
-              <h2>Designer profiles</h2>
+              <div className="marketplace-section-heading">
+                <h2>Designer profiles</h2>
+                <button className="marketplace-focus-button" type="button" onClick={() => setMarketplaceView(marketplaceView === 'designers' ? 'combined' : 'designers')} aria-label="Show designer profiles only" title="Show designer profiles only">
+                  +
+                </button>
+              </div>
               <span className="count-pill">{designers.length}</span>
             </div>
             {designers.length === 0 ? (
@@ -197,6 +207,7 @@ export function Marketplace() {
                       <div className="stack compact">
                         <div className="profile-card-identity">
                           <strong>{profile.user.name}</strong>
+                          <VerificationBadge status={profile.user.verification} />
                           {profile.user.tier ? (
                             <TierBadge tier={profile.user.tier} status={profile.user.verification} />
                           ) : null}
@@ -230,10 +241,17 @@ export function Marketplace() {
               </nav>
             ) : null}
           </section>
+          ) : null}
 
+          {marketplaceView !== 'designers' ? (
           <section className="stack">
             <div className="section-title">
-              <h2>Job feed</h2>
+              <div className="marketplace-section-heading">
+                <h2>Job feed</h2>
+                <button className="marketplace-focus-button" type="button" onClick={() => setMarketplaceView(marketplaceView === 'jobs' ? 'combined' : 'jobs')} aria-label="Show job feed only" title="Show job feed only">
+                  +
+                </button>
+              </div>
               <span className="count-pill">{filteredJobs.length}</span>
             </div>
             {filteredJobs.length === 0 ? (
@@ -282,6 +300,7 @@ export function Marketplace() {
               </nav>
             ) : null}
           </section>
+          ) : null}
         </div>
       ) : null}
     </main>

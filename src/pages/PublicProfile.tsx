@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
 import { TierBadge } from '../components/TierBadge';
+import { VerificationBadge } from '../components/VerificationBadge';
 import { BUILDING_TYPE_LABELS, projectTypeLabel } from '../constants/marketplace';
 import { ROLE_LABELS } from '../constants/roles';
-import { authService, marketplaceService } from '../services';
+import { authService, marketplaceService, trustSafetyService } from '../services';
 import type { Job, User } from '../types';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatPeso } from '../utils/format';
+import { useAuth } from '../hooks/useAuth';
 
 export function PublicProfile() {
   const { id } = useParams();
@@ -15,6 +17,9 @@ export function PublicProfile() {
   const [member, setMember] = useState<User | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState(false);
+  const [trustMessage, setTrustMessage] = useState<string | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!id) return;
@@ -24,9 +29,25 @@ export function PublicProfile() {
         if (!found) throw new Error('Profile not found.');
         setMember(found);
         setJobs(allJobs.filter((job) => job.clientId === id));
+        setBlocked(user ? trustSafetyService.isBlocked(user.id, found.id) : false);
       })
       .catch((err) => setError(errorMessage(err)));
-  }, [id]);
+  }, [id, user]);
+
+  const toggleBlock = () => {
+    if (!user || !member) return;
+    const nextBlocked = trustSafetyService.toggleBlock(user.id, member.id);
+    setBlocked(nextBlocked);
+    setTrustMessage(nextBlocked ? 'This member has been blocked.' : 'This member has been unblocked.');
+  };
+
+  const reportMember = () => {
+    if (!user || !member) return;
+    const reason = window.prompt('Why are you reporting this member?');
+    if (!reason?.trim()) return;
+    trustSafetyService.reportUser(user.id, member.id, reason.trim());
+    setTrustMessage('Thanks. Your report has been recorded for review.');
+  };
 
   if (error || !member) {
     return <main className="page"><div className="alert error">{error ?? 'Loading profile...'}</div></main>;
@@ -42,6 +63,7 @@ export function PublicProfile() {
           <p className="muted">{member.location ?? 'Location not provided'}</p>
         </div>
         {member.tier ? <TierBadge tier={member.tier} status={member.verification} /> : null}
+        <VerificationBadge status={member.verification} />
       </section>
 
       <button className="btn btn-secondary profile-back-button" type="button" onClick={() => navigate(-1)}>
@@ -51,9 +73,16 @@ export function PublicProfile() {
       <section className="card stack">
         <div className="section-title">
           <h2>Member profile</h2>
-          <span className={`status-pill ${member.verification}`}>{member.verification}</span>
+          <VerificationBadge status={member.verification} />
         </div>
         <div className="meta-row"><span>{jobs.length} jobs posted</span><span>{member.email}</span></div>
+        {user && user.id !== member.id ? (
+          <div className="trust-actions">
+            <button className="btn btn-secondary" type="button" onClick={toggleBlock}>{blocked ? 'Unblock member' : 'Block member'}</button>
+            <button className="btn btn-secondary" type="button" onClick={reportMember}>Report member</button>
+          </div>
+        ) : null}
+        {trustMessage ? <p className="muted">{trustMessage}</p> : null}
         {member.specialties.length > 0 ? <div className="tag-row">{member.specialties.map((item) => <span className="tag" key={item}>{item}</span>)}</div> : null}
       </section>
 

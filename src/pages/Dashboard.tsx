@@ -14,6 +14,7 @@ export function Dashboard() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [allJobs, setAllJobs] = useState<Job[]>([]);
   const [jobStatusFilter, setJobStatusFilter] = useState<Job['status'] | 'all'>('all');
+  const [projectStatusFilter, setProjectStatusFilter] = useState<Project['status'] | 'all'>('all');
   const [projects, setProjects] = useState<Project[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -65,6 +66,12 @@ export function Dashboard() {
 
   const canPostJobs = user.role === 'client' || ((user.role === 'designer' || user.role === 'pee_reviewer') && user.verification === 'verified');
   const visibleJobs = jobStatusFilter === 'all' ? jobs : jobs.filter((job) => job.status === jobStatusFilter);
+  const postedProjects = projects.filter((project) => project.clientId === user.id);
+  const workingProjects = projects.filter((project) => project.designerId === user.id || project.collaboratorIds?.includes(user.id));
+  const visibleProjects = projectStatusFilter === 'all' ? projects : projects.filter((project) => project.status === projectStatusFilter);
+  const visiblePostedProjects = visibleProjects.filter((project) => project.clientId === user.id);
+  const visibleWorkingProjects = visibleProjects.filter((project) => project.designerId === user.id || project.collaboratorIds?.includes(user.id));
+  const unreadActivityCount = messages.filter((message) => message.recipientId === user.id).length;
 
   const startEditingProposal = (proposal: Proposal) => {
     setEditingProposalId(proposal.id);
@@ -122,21 +129,46 @@ export function Dashboard() {
       {error ? <div className="alert error">{error}</div> : null}
 
       {!loading && !error ? (
-        <div className="grid two dashboard-columns">
-          <section className="card stack dashboard-panel">
-            <div className="section-title">
-              <h2>Projects</h2>
-              <span className="count-pill">{projects.length}</span>
+        <>
+          <section className="dashboard-summary-grid" aria-label="Workspace summary">
+            <div className="card dashboard-summary-card"><span>Active projects</span><strong>{projects.filter((project) => project.status === 'active').length}</strong><small>Projects in progress</small></div>
+            <div className="card dashboard-summary-card"><span>Open jobs</span><strong>{jobs.filter((job) => job.status === 'open').length}</strong><small>Your available job posts</small></div>
+            <div className="card dashboard-summary-card"><span>Proposals</span><strong>{proposals.length}</strong><small>Submitted by you</small></div>
+            <div className="card dashboard-summary-card"><span>Unread activity</span><strong>{unreadActivityCount}</strong><small>Incoming messages</small></div>
+          </section>
+
+          <div className="section-title dashboard-project-toolbar">
+            <div>
+              <p className="eyebrow">Projects</p>
+              <h2>Manage your project work</h2>
             </div>
-            {projects.length === 0 ? (
-              <div className="empty-state">
-                <p>No accepted proposal has created a project yet.</p>
-                <Link className="btn btn-secondary" to="/marketplace">
-                  Find one
-                </Link>
+            <div className="dashboard-project-filters" role="tablist" aria-label="Filter projects">
+              {(['all', 'active', 'completed'] as const).map((status) => (
+                <button className={projectStatusFilter === status ? 'active' : ''} type="button" key={status} onClick={() => setProjectStatusFilter(status)} aria-pressed={projectStatusFilter === status}>
+                  {status === 'all' ? 'All' : status}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid two dashboard-columns">
+          {[{ title: 'Your projects', description: 'Projects created from jobs you posted.', items: visiblePostedProjects, total: postedProjects.length, empty: 'You do not have any projects from your job posts yet.' }, { title: 'Projects you are working on', description: 'Jobs you accepted from other members.', items: visibleWorkingProjects, total: workingProjects.length, empty: 'You have not taken on any projects yet.' }].map((group) => (
+            <section className="card stack dashboard-panel" key={group.title}>
+              <div className="section-title">
+                <div>
+                  <h2>{group.title}</h2>
+                  <small className="muted">{group.description}</small>
+                </div>
+                <span className="count-pill">{group.items.length} / {group.total}</span>
               </div>
-            ) : (
-              projects.map((project) => (
+              {group.items.length === 0 ? (
+                <div className="empty-state">
+                  <p>{group.empty}</p>
+                  <Link className="btn btn-secondary" to="/marketplace">
+                    Browse jobs
+                  </Link>
+                </div>
+              ) : group.items.map((project) => (
                 <Link className="list-card dashboard-list-card" to={`/projects/${project.id}`} key={project.id}>
                   <div className="split-row">
                     <strong>{project.title}</strong>
@@ -148,13 +180,14 @@ export function Dashboard() {
                     <div className="project-progress-track"><span style={{ width: `${project.progressPercent ?? 0}%` }} /></div>
                     <small>{project.progressPercent ?? 0}% complete - Created {formatDate(project.createdAt)}</small>
                   </div>
+                  <small>{project.clientId === user.id ? `Designer: ${members[project.designerId]?.name ?? 'Ohmi member'}` : `Client: ${members[project.clientId]?.name ?? 'Ohmi member'}`}</small>
                   {project.collaboratorIds?.length ? (
                     <small>Collaborators: {project.collaboratorIds.map((memberId) => members[memberId]?.name ?? 'Ohmi member').join(', ')}</small>
                   ) : null}
                 </Link>
-              ))
-            )}
-          </section>
+              ))}
+            </section>
+          ))}
 
           <section className="card stack dashboard-panel">
             <div className="section-title">
@@ -202,7 +235,8 @@ export function Dashboard() {
               </div>
             )}
           </section>
-        </div>
+          </div>
+        </>
       ) : null}
 
       {messages.length > 0 ? (

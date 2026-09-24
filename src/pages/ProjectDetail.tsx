@@ -326,7 +326,7 @@ export function ProjectDetail() {
           </section>
         </div>
 
-        <section className="card stack project-chat-panel">
+        <section className="card stack project-chat-panel" id="project-conversation">
           <div className="section-title">
             <div>
               <h2>Project conversation</h2>

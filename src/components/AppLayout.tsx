@@ -4,6 +4,15 @@ import { useAuth } from '../hooks/useAuth';
 import { ROLE_LABELS } from '../constants/roles';
 import ohmiMark from '../assets/ohmi-mark.png';
 import { Avatar } from './Avatar';
+import { marketplaceService } from '../services';
+
+interface HeaderNotification {
+  id: string;
+  title: string;
+  body: string;
+  to: string;
+  createdAt: string;
+}
 
 export function AppLayout() {
   const { user, logout } = useAuth();
@@ -11,6 +20,8 @@ export function AppLayout() {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<HeaderNotification[]>([]);
   const profileRef = useRef<HTMLDivElement>(null);
 
   // Adds a hairline shadow to the sticky header once the page has scrolled.
@@ -33,6 +44,65 @@ export function AppLayout() {
     document.addEventListener('mousedown', closeProfile);
     return () => document.removeEventListener('mousedown', closeProfile);
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setNotifications([]);
+      return;
+    }
+
+    const loadNotifications = async () => {
+      const [messages, projects, proposals, jobs] = await Promise.all([
+        marketplaceService.listMessagesForUser(user.id),
+        marketplaceService.listProjectsForUser(user.id),
+        user.role === 'designer' || user.role === 'pee_reviewer' ? marketplaceService.listProposalsForDesigner(user.id) : Promise.resolve([]),
+        marketplaceService.listJobs(),
+      ]);
+      const projectByProposalId = new Map(projects.map((project) => [project.proposalId, project]));
+      const nextNotifications: HeaderNotification[] = [
+        ...messages
+          .filter((message) => message.recipientId === user.id)
+          .map((message) => ({
+            id: message.id,
+            title: message.projectId ? 'New project message' : 'New message',
+            body: message.body,
+            to: message.projectId ? `/projects/${message.projectId}#project-conversation` : '/messages',
+            createdAt: message.createdAt,
+          })),
+        ...projects.map((project) => ({
+          id: `project-${project.id}`,
+          title: 'Project accepted',
+          body: `${project.title} is now ready for collaboration.`,
+          to: `/projects/${project.id}#project-conversation`,
+          createdAt: project.createdAt,
+        })),
+        ...proposals
+          .filter((proposal) => proposal.status !== 'pending')
+          .map((proposal) => {
+            const project = projectByProposalId.get(proposal.id);
+            return {
+              id: `proposal-${proposal.id}`,
+              title: proposal.status === 'accepted' ? 'Proposal accepted' : 'Proposal declined',
+              body: proposal.status === 'accepted' ? 'Your proposal was accepted.' : 'Your proposal was declined.',
+              to: project ? `/projects/${project.id}#project-conversation` : `/jobs/${proposal.jobId}`,
+              createdAt: proposal.createdAt,
+            };
+          }),
+        ...jobs
+          .filter((job) => job.clientId === user.id && job.status === 'assigned')
+          .map((job) => ({
+            id: `job-${job.id}`,
+            title: 'Job assigned',
+            body: `${job.title} has been assigned to a designer.`,
+            to: `/jobs/${job.id}`,
+            createdAt: job.createdAt,
+          })),
+      ];
+      setNotifications(nextNotifications.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).slice(0, 8));
+    };
+
+    void loadNotifications();
+  }, [user]);
 
   const handleLogout = async () => {
     await logout();
@@ -60,6 +130,45 @@ export function AppLayout() {
         <div className="user-chip" ref={profileRef}>
           {user ? (
             <>
+              <button
+                className="notification-button"
+                type="button"
+                aria-label="Notifications"
+                aria-expanded={notificationsOpen}
+                aria-haspopup="menu"
+                title="Notifications"
+                onClick={() => setNotificationsOpen((open) => !open)}
+              >
+                <span className="notification-icon" aria-hidden="true">&#128276;&#xfe0e;</span>
+                {notifications.length > 0 ? <span className="notification-dot" aria-hidden="true" /> : null}
+              </button>
+              {notificationsOpen ? (
+                <div className="notification-menu" role="menu" aria-label="Notifications">
+                  <div className="notification-heading">
+                    <strong>Notifications</strong>
+                    <span>{notifications.length}</span>
+                  </div>
+                  {notifications.length === 0 ? (
+                    <p className="notification-empty">No new notifications.</p>
+                  ) : (
+                    notifications.map((notification) => (
+                      <NavLink
+                        className="notification-item"
+                        key={notification.id}
+                        to={notification.to}
+                        role="menuitem"
+                        onClick={() => setNotificationsOpen(false)}
+                      >
+                        <strong>{notification.title}</strong>
+                        <span>{notification.body}</span>
+                      </NavLink>
+                    ))
+                  )}
+                  <NavLink className="notification-footer" to="/dashboard" onClick={() => setNotificationsOpen(false)}>
+                    View more activity
+                  </NavLink>
+                </div>
+              ) : null}
               <button
                 className="profile-trigger"
                 type="button"

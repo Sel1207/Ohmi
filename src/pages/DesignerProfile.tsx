@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { projectTypeLabel } from '../constants/marketplace';
 import { TierBadge } from '../components/TierBadge';
+import { VerificationBadge } from '../components/VerificationBadge';
 import { Avatar } from '../components/Avatar';
-import { marketplaceService } from '../services';
+import { marketplaceService, trustSafetyService } from '../services';
 import type { DesignerProfileView, Review } from '../types';
 import { formatDate } from '../utils/format';
 import { errorMessage } from '../utils/errors';
@@ -17,6 +18,8 @@ export function DesignerProfile() {
   const [error, setError] = useState<string | null>(null);
   const [following, setFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
+  const [blocked, setBlocked] = useState(false);
+  const [trustMessage, setTrustMessage] = useState<string | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -38,6 +41,7 @@ export function DesignerProfile() {
         setReviews(reviewData);
         setFollowerCount(count);
         setFollowing(user ? await marketplaceService.isFollowingDesigner(designerId, user.id) : false);
+        setBlocked(user ? trustSafetyService.isBlocked(user.id, profileData.user.id) : false);
       } catch (err) {
         if (alive) setError(errorMessage(err));
       } finally {
@@ -49,6 +53,21 @@ export function DesignerProfile() {
       alive = false;
     };
   }, [id, user]);
+
+  const toggleBlock = () => {
+    if (!user || !profile) return;
+    const nextBlocked = trustSafetyService.toggleBlock(user.id, profile.user.id);
+    setBlocked(nextBlocked);
+    setTrustMessage(nextBlocked ? 'This designer has been blocked.' : 'This designer has been unblocked.');
+  };
+
+  const reportDesigner = () => {
+    if (!user || !profile) return;
+    const reason = window.prompt('Why are you reporting this designer?');
+    if (!reason?.trim()) return;
+    trustSafetyService.reportUser(user.id, profile.user.id, reason.trim());
+    setTrustMessage('Thanks. Your report has been recorded for review.');
+  };
 
   const toggleFollow = async () => {
     if (!id || !user) return;
@@ -96,7 +115,7 @@ export function DesignerProfile() {
         </div>
         <div className="profile-heading-badges">
           {profile.user.tier ? <TierBadge tier={profile.user.tier} status={profile.user.verification} /> : null}
-          <span className={`status-pill ${profile.user.verification}`}>{profile.user.verification}</span>
+          <VerificationBadge status={profile.user.verification} />
           {user?.id !== profile.user.id ? (
             <>
               <Link className="btn btn-secondary" to={`/messages/new?to=${profile.user.id}`}>
@@ -105,6 +124,8 @@ export function DesignerProfile() {
               <button className={following ? 'follow-button active' : 'follow-button'} type="button" onClick={() => void toggleFollow()}>
                 <span aria-hidden="true">{following ? '♥' : '♡'}</span> {following ? 'Following' : 'Follow'}
               </button>
+              <button className="btn btn-secondary" type="button" onClick={toggleBlock}>{blocked ? 'Unblock' : 'Block'}</button>
+              <button className="btn btn-secondary" type="button" onClick={reportDesigner}>Report</button>
             </>
           ) : null}
         </div>
@@ -113,6 +134,7 @@ export function DesignerProfile() {
       <button className="btn btn-secondary profile-back-button" type="button" onClick={() => navigate(-1)}>
         Back
       </button>
+      {trustMessage ? <p className="muted trust-feedback">{trustMessage}</p> : null}
 
       <div className="grid two uneven">
         <section className="card stack">
